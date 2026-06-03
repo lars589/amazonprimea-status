@@ -1,0 +1,91 @@
+# External uptime prober for amazonprimea.com — DATA-ONLY mirror (ADR 0029).
+#
+# This is the OFF-BOX copy that lives in the public lars589/amazonprimea-status
+# repo (which also hosts the status page on GitHub Pages). It runs on
+# GitHub-hosted runners — i.e. OFF our DigitalOcean droplet — so it can see a
+# full outage that the in-process poller (src/gds/uptime-poller.js) never can.
+#
+# It probes the public URL and records the result to this repo's off-box
+# `status-data` branch, which the status page reads (status.json) to show an
+# always-truthful availability banner even while the droplet is dark.
+#
+# DATA-ONLY, NO ALERTING: the private Claude-OTB repo's status-probe workflow
+# already emails the owner on a confirmed outage. This mirror must NOT
+# double-alert — there is deliberately no "alert on DOWN" step and the job never
+# exits non-zero on a down result. Its sole job is to keep status.json fresh so
+# the public page tells the truth off-box.
+#
+# NOTE: scheduled workflows only fire from the DEFAULT branch, so the cron does
+# nothing until this file is on `main`. Use the "Run workflow" button
+# (workflow_dispatch) to test before then. GitHub also disables schedules after
+# 60 days of repo inactivity — the */5 cron keeps the repo active on its own.
+
+name: status-probe
+
+on:
+  schedule:
+    # Every 5 minutes (GitHub's minimum cron granularity; runs may be delayed
+    # by a few minutes under platform load — acceptable for a status monitor).
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+# Least privilege: `contents: write` is the minimum that lets the job push the
+# `status-data` branch. GitHub has no per-branch token scope, so this token could
+# technically push elsewhere — a branch-protection rule on `main` (required
+# review) is the real backstop, and is recommended regardless of this workflow.
+permissions:
+  contents: write
+
+# Never let two probe runs race on the branch push.
+concurrency:
+  group: status-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (for the probe script)
+        uses: actions/checkout@v4
+
+      - name: Probe the live site from outside
+        id: probe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          DATA=_statusdata
+          rm -rf "$DATA"; mkdir "$DATA"
+          # Self-contained git repo for the data branch; keep prior history if it exists.
+          git -C "$DATA" init -q -b status-data
+          git -C "$DATA" remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          # Auth via the credential store, fed over STDIN. `printf` is a bash builtin,
+          # so the token is never an argv of any spawned process — no process-table
+          # exposure window (vs. embedding it in the remote URL). ADR 0029.
+          git -C "$DATA" config credential.helper store
+          printf 'protocol=https\nhost=github.com\nusername=x-access-token\npassword=%s\n\n' "${GITHUB_TOKEN}" \
+            | git -C "$DATA" credential approve
+          if git -C "$DATA" fetch --depth=1 origin status-data 2>/dev/null; then
+            git -C "$DATA" reset -q --hard origin/status-data
+          fi
+          # Probe (writes status.json + history.jsonl into $DATA, sets step outputs).
+          node scripts/status-probe.mjs --dir "$DATA"
+
+      - name: Publish result to the status-data branch
+        if: always()
+        env:
+          # Bind step outputs through env (never interpolate ${{ }} straight into
+          # a run: block) — GitHub-recommended hardening against script injection.
+          PROBE_STATUS: ${{ steps.probe.outputs.status || 'unknown' }}
+        run: |
+          set -euo pipefail
+          cd _statusdata
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No change to publish."
+            exit 0
+          fi
+          git -c user.email="status-bot@users.noreply.github.com" \
+              -c user.name="amazonprimea status bot" \
+              commit -q -m "status: ${PROBE_STATUS} @ $(date -u +%FT%TZ)"
+          git push -q origin status-data

@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazonprimea — the public ledger</title>
+  <meta name="description" content="The public ledger of Amazonprimea — drachmae spent, works wrought, and the citizens who shape her stones.">
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text x='16' y='24' font-size='24' text-anchor='middle' font-family='serif'>Α</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2026-05-30-cursor-2">
+</head>
+<body>
+
+<!-- Off-box availability banner (ADR 0029). This is the ONE thing on the page
+     that stays correct when the droplet (and its /api) are dark, because it
+     reads OFF-BOX data: a status.json published to this repo's `status-data`
+     branch by a GitHub-hosted prober, served from raw.githubusercontent.com.
+     Everything else below is the live dashboard, fed cross-origin from the
+     droplet — those panels degrade gracefully (fetch .catch → null) when the
+     droplet is down; this strip does not. -->
+<div id="offbox-status" role="status" aria-live="polite"></div>
+
+<!-- Hidden SVG sprite — referenced via <use href="#id"> below. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="orn-map" viewBox="0 0 32 32">
+      <g fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="3,4 11,7 21,4 29,7 29,28 21,25 11,28 3,25"/>
+        <line x1="11" y1="7" x2="11" y2="28"/>
+        <line x1="21" y1="4" x2="21" y2="25"/>
+        <path d="M7 14 Q9 11 11 14 Q13 17 15 14"/>
+        <path d="M21 10 Q23 8 25 10 Q27 12 25 15"/>
+      </g>
+    </symbol>
+
+    <symbol id="sigil-amphora" viewBox="0 0 64 64">
+      <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 12 L42 12 L40 16 Q47 20 47 32 Q47 46 40 54 L24 54 Q17 46 17 32 Q17 20 24 16 Z"/>
+        <path d="M17 22 Q9 24 9 30 Q9 36 16 40"/>
+        <path d="M47 22 Q55 24 55 30 Q55 36 48 40"/>
+        <line x1="20" y1="32" x2="44" y2="32"/>
+        <line x1="20" y1="36" x2="44" y2="36"/>
+        <line x1="22" y1="12" x2="42" y2="12" stroke-width="2.2"/>
+      </g>
+      <g fill="currentColor">
+        <ellipse cx="32" cy="44" rx="1" ry="1"/>
+      </g>
+    </symbol>
+
+    <symbol id="orn-column" viewBox="0 0 32 32">
+      <g stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
+        <rect x="4" y="2" width="24" height="2" fill="currentColor" stroke="none"/>
+        <rect x="6" y="4" width="20" height="2" fill="none"/>
+        <line x1="9" y1="6" x2="9" y2="26"/>
+        <line x1="13" y1="6" x2="13" y2="26"/>
+        <line x1="16" y1="6" x2="16" y2="26"/>
+        <line x1="19" y1="6" x2="19" y2="26"/>
+        <line x1="23" y1="6" x2="23" y2="26"/>
+        <rect x="6" y="26" width="20" height="2" fill="none"/>
+        <rect x="4" y="28" width="24" height="2" fill="currentColor" stroke="none"/>
+      </g>
+    </symbol>
+
+    <symbol id="orn-coin" viewBox="0 0 32 32">
+      <g fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="16" cy="16" r="13"/>
+        <circle cx="16" cy="16" r="10"/>
+        <path d="M10 20 Q16 12 22 12"/>
+      </g>
+      <g fill="currentColor">
+        <ellipse cx="13" cy="17.5" rx="1.4" ry="0.7" transform="rotate(-35 13 17.5)"/>
+        <ellipse cx="15.5" cy="14.5" rx="1.4" ry="0.7" transform="rotate(-15 15.5 14.5)"/>
+        <ellipse cx="19" cy="13" rx="1.4" ry="0.7" transform="rotate(0 19 13)"/>
+      </g>
+    </symbol>
+
+    <symbol id="orn-scroll" viewBox="0 0 32 32">
+      <g fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 9 L24 9"/>
+        <path d="M8 23 L24 23"/>
+        <ellipse cx="6" cy="16" rx="2.2" ry="7"/>
+        <ellipse cx="26" cy="16" rx="2.2" ry="7"/>
+        <line x1="11" y1="13" x2="22" y2="13"/>
+        <line x1="11" y1="16" x2="22" y2="16"/>
+        <line x1="11" y1="19" x2="20" y2="19"/>
+      </g>
+      <g fill="currentColor">
+        <ellipse cx="6" cy="16" rx="0.8" ry="2.6"/>
+        <ellipse cx="26" cy="16" rx="0.8" ry="2.6"/>
+      </g>
+    </symbol>
+
+    <symbol id="orn-laurel" viewBox="0 0 32 32">
+      <g fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 29 Q5 24 5 14 Q5 6 11 3"/>
+        <path d="M16 29 Q27 24 27 14 Q27 6 21 3"/>
+        <path d="M14 29 L18 29"/>
+      </g>
+      <g fill="currentColor">
+        <ellipse cx="9"  cy="22" rx="2.2" ry="1" transform="rotate(60 9 22)"/>
+        <ellipse cx="6"  cy="18" rx="2.2" ry="1" transform="rotate(80 6 18)"/>
+        <ellipse cx="6"  cy="13" rx="2.2" ry="1" transform="rotate(100 6 13)"/>
+        <ellipse cx="9"  cy="8"  rx="2.2" ry="1" transform="rotate(130 9 8)"/>
+        <ellipse cx="23" cy="22" rx="2.2" ry="1" transform="rotate(120 23 22)"/>
+        <ellipse cx="26" cy="18" rx="2.2" ry="1" transform="rotate(100 26 18)"/>
+        <ellipse cx="26" cy="13" rx="2.2" ry="1" transform="rotate(80 26 13)"/>
+        <ellipse cx="23" cy="8"  rx="2.2" ry="1" transform="rotate(50 23 8)"/>
+      </g>
+    </symbol>
+
+    <symbol id="orn-diamond" viewBox="0 0 12 12">
+      <rect x="3" y="3" width="6" height="6" transform="rotate(45 6 6)" fill="currentColor"/>
+    </symbol>
+
+    <symbol id="orn-eye" viewBox="0 0 32 32">
+      <g fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 16 Q16 5 29 16 Q16 27 3 16 Z"/>
+        <circle cx="16" cy="16" r="4.5"/>
+        <circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="herm">
+  <svg class="herm__sigil" aria-hidden="true"><use href="#sigil-amphora"/></svg>
+  <h1>Amazonprimea</h1>
+  <p class="herm__epigraph">The Public Ledger of the City's Making</p>
+  <p class="herm__sub">A shipping container has washed ashore upon the coast south of Athens. About it a new civilization rises. Set out below: the city's affairs, openly recorded.</p>
+  <p class="herm__meta">
+    <a href="https://amazonprimea.com" target="_blank" rel="noopener">Cross into the city →</a>
+    <span class="dot" aria-hidden="true">·</span>
+    <span class="herm__updated" id="last-updated">Tablet being consulted…</span>
+  </p>
+</header>
+
+<div class="rule rule--banner" aria-hidden="true">
+  <svg><use href="#orn-diamond"/></svg>
+  <svg><use href="#orn-diamond"/></svg>
+  <svg><use href="#orn-diamond"/></svg>
+</div>
+
+<!-- Sticky themed section nav — #409. Same design language as the hall
+     (public-builders/style.css .hall-nav__*). Built from a SECTIONS constant
+     in status.js. Empty until populated — [hidden] keeps the strip from
+     flashing as a blank parchment band before chips arrive. -->
+<nav id="status-nav" class="status-nav" aria-label="Sections of the ledger" hidden>
+  <div class="status-nav__inner">
+    <ul class="status-nav__list" id="status-nav-list"></ul>
+  </div>
+</nav>
+
+<main>
+
+  <!-- Headline strip — #409. Above-the-fold answer to four common visitor
+       questions: "is it alive?", "what shipped lately?", "how much money
+       is going through?", "is quality holding?" Stacks 2×2 on tablet and
+       1×4 on mobile. Loaded by loadHeadline() in status.js, fed by the
+       existing public endpoints (uptime, recent-shipped, cost-summary,
+       grades) so no new server work was required. -->
+  <section class="tablet tablet--headline" id="headline-tablet" aria-labelledby="headline-heading">
+    <h2 id="headline-heading" class="visually-hidden">The City At A Glance</h2>
+    <div class="headline-grid">
+      <div class="stat headline-stat" id="headline-standing">
+        <div class="stat__num" id="headline-standing-num">—</div>
+        <div class="stat__label">city's standing</div>
+      </div>
+      <div class="stat headline-stat" id="headline-shipped">
+        <div class="stat__num" id="headline-shipped-num">—</div>
+        <div class="stat__label">works wrought, last 7 days</div>
+      </div>
+      <div class="stat headline-stat" id="headline-treasury">
+        <div class="stat__num" id="headline-treasury-num">—</div>
+        <div class="stat__label" id="headline-treasury-label">of the year's purse spent</div>
+        <div class="headline-bar" aria-hidden="true">
+          <div class="headline-bar__fill" id="headline-treasury-bar" style="width: 0%"></div>
+        </div>
+      </div>
+      <div class="stat headline-stat" id="headline-grade">
+        <div class="stat__num" id="headline-grade-num">—</div>
+        <div class="stat__label">passed the inspector, last 7 days</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tablet tablet--wide" id="world-tablet" aria-labelledby="world-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-map"/></svg>
+      <div class="tablet__heading">
+        <h2 id="world-heading">The World</h2>
+        <p class="tablet__subtitle">A true-to-life portrait of Amazonprimea as she stands today, rendered from the city's own stones.</p>
+      </div>
+    </div>
+    <div id="world-snapshot" class="world-snapshot">
+      <p class="empty">The cartographers are still at their survey…</p>
+    </div>
+    <!-- #409: snapshot history collapsed behind a toggle. The latest snapshot
+         above is the prime view; the timeline of older snapshots is reference
+         material that previously ate ~300px of prime real estate. -->
+    <details class="world-history" id="world-history">
+      <summary class="world-history__summary">Show history of earlier portraits</summary>
+      <div id="world-timeline" class="world-timeline" aria-label="World snapshots over time"></div>
+      <p class="world-note" id="world-note" hidden>A new portrait is set down each time the city's stones are reshaped. Scroll to see how Amazonprimea has grown.</p>
+    </details>
+  </section>
+
+  <section class="tablet" id="versions-tablet" aria-labelledby="versions-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-column"/></svg>
+      <div class="tablet__heading">
+        <h2 id="versions-heading">Works in Progress</h2>
+        <p class="tablet__subtitle">Each endeavor, and how near it stands to completion.</p>
+      </div>
+    </div>
+    <div id="versions" class="versions">
+      <p class="empty">The masons are at their tools…</p>
+    </div>
+  </section>
+
+  <section class="tablet" id="shipped-tablet" aria-labelledby="shipped-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-scroll"/></svg>
+      <div class="tablet__heading">
+        <h2 id="shipped-heading">Lately Inscribed</h2>
+        <p class="tablet__subtitle">Newest entries set down upon the ledger.</p>
+      </div>
+      <div class="tablet__filter">
+        <label for="shipped-range" class="tablet__filter-label">Window</label>
+        <select id="shipped-range" class="tablet__filter-select" aria-label="Filter inscriptions by date range">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="all">All time</option>
+        </select>
+      </div>
+    </div>
+    <ul id="shipped" class="shipped">
+      <li class="empty">No works yet inscribed.</li>
+    </ul>
+    <nav id="shipped-pager" class="shipped-pager" hidden aria-label="Lately Inscribed pages">
+      <button type="button" id="shipped-prev" class="shipped-pager__btn" aria-label="Previous page">‹ earlier page</button>
+      <span id="shipped-pageinfo" class="shipped-pager__info" aria-live="polite">page 1 of 1</span>
+      <button type="button" id="shipped-next" class="shipped-pager__btn" aria-label="Next page">later page ›</button>
+    </nav>
+  </section>
+
+  <section class="tablet" id="leader-tablet" aria-labelledby="leader-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-laurel"/></svg>
+      <div class="tablet__heading">
+        <h2 id="leader-heading">Architects of Amazonprimea</h2>
+        <p class="tablet__subtitle">Citizens who have set the most stone.</p>
+      </div>
+    </div>
+    <ol id="leaderboard" class="leader">
+      <li class="empty">No architects yet — be the first to lay a stone.</li>
+    </ol>
+  </section>
+
+  <section class="tablet" id="cost-tablet" aria-labelledby="cost-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-coin"/></svg>
+      <div class="tablet__heading">
+        <h2 id="cost-heading">The Treasury</h2>
+        <p class="tablet__subtitle">Drachmae spent, against the value wrought.</p>
+      </div>
+    </div>
+    <div class="cost-summary">
+      <div class="stat">
+        <div class="stat__num" id="cost-total">—</div>
+        <div class="stat__label">drachmae spent</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num" id="value-total">—</div>
+        <div class="stat__label">value wrought</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num" id="cost-budget">5,000</div>
+        <div class="stat__label">year's purse</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num" id="cost-percent">—</div>
+        <div class="stat__label">of the purse</div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="cost-chart" aria-label="cumulative drachmae spent against cumulative value wrought, day by day" role="img"></canvas>
+    </div>
+    <p class="chart-note">The line of value above the line of spend means the city is wrought richer than it is dear.</p>
+    <div id="cost-categories" class="cost-cats"></div>
+    <p class="chart-note">Split by quarter — the works of the city (product) against the keep that holds them up (internal).</p>
+    <div id="cost-tracks" class="cost-cats"></div>
+    <p class="chart-note">Split by hand — drachmae spent by each builder at the workshop. <em>Unattributed</em> is the shared keep: infrastructure and domains the whole city pays for, plus the early days before each hand carried its own purse — never quietly charged to one builder.</p>
+    <p id="cost-attribution-split" class="cost-split" aria-live="polite"></p>
+    <div id="cost-builders" class="cost-cats"></div>
+  </section>
+
+  <section class="tablet" id="grade-tablet" aria-labelledby="grade-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-eye"/></svg>
+      <div class="tablet__heading">
+        <h2 id="grade-heading">The Stonemason's Mark</h2>
+        <p class="tablet__subtitle">Each work is marked for quality before its drachmae are paid.</p>
+      </div>
+    </div>
+    <div class="cost-summary" id="grade-stats">
+      <div class="stat">
+        <div class="stat__num" id="grade-avg">—</div>
+        <div class="stat__label">avg mark, last 7 days</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num" id="grade-pass-rate">—</div>
+        <div class="stat__label">passed the inspector</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num" id="grade-n">—</div>
+        <div class="stat__label">works graded</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num" id="grade-threshold">—</div>
+        <div class="stat__label">passing mark</div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="grade-chart" aria-label="rolling daily quality marks" role="img"></canvas>
+    </div>
+    <p class="chart-note">A work is sealed and paid only when the inspector's mark meets the passing threshold. The line below shows the city's average mark, day by day.</p>
+  </section>
+
+  <section class="tablet" id="drift-tablet" aria-labelledby="drift-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-eye"/></svg>
+      <div class="tablet__heading">
+        <h2 id="drift-heading">The Surveyor's Reckoning</h2>
+        <p class="tablet__subtitle">How well the senate's estimates match the hours truly spent.</p>
+      </div>
+    </div>
+    <div class="cost-summary" id="drift-stats">
+      <div class="stat">
+        <div class="stat__num" id="drift-median">—</div>
+        <div class="stat__label">median ratio (actual / est)</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num" id="drift-sample">—</div>
+        <div class="stat__label">tasks measured</div>
+      </div>
+    </div>
+    <div id="drift-versions" class="cost-cats"></div>
+    <p class="chart-note">A ratio of 1.0 means estimates were exact. Above 1.0 means work took longer than foreseen; below 1.0 means it went swifter.</p>
+  </section>
+
+  <section class="tablet" id="repo-tablet" aria-labelledby="repo-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-eye"/></svg>
+      <div class="tablet__heading">
+        <h2 id="repo-heading">The Mason's Ledger</h2>
+        <p class="tablet__subtitle">The weight of the city's stonework — and the rubble left behind.</p>
+      </div>
+    </div>
+    <div class="cost-summary" id="repo-stats">
+      <div class="stat">
+        <div class="stat__num" id="repo-loc">—</div>
+        <div class="stat__label">lines of stonework</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num" id="repo-dead">—</div>
+        <div class="stat__label">abandoned exports</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num" id="repo-branches">—</div>
+        <div class="stat__label">unmerged works</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num" id="repo-confirmed">—</div>
+        <div class="stat__label">sealed, not yet laid</div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="repo-chart" aria-label="repo health trend over time" role="img"></canvas>
+    </div>
+    <p class="chart-note">Lines of stonework is the total of the city's source. Abandoned exports and unmerged works are the rubble that accrues when a builder writes more than the city needs; the lines below trace how that weight shifts day by day.</p>
+  </section>
+
+  <section class="tablet" id="uptime-tablet" aria-labelledby="uptime-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-eye"/></svg>
+      <div class="tablet__heading">
+        <h2 id="uptime-heading">The Watch</h2>
+        <p class="tablet__subtitle">The standing of each pillar — whether it holds or has fallen.</p>
+      </div>
+    </div>
+    <div id="uptime" class="uptime-list">
+      <p class="empty">The sentinels are taking their positions…</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="rule rule--small" aria-hidden="true">
+    <svg><use href="#orn-diamond"/></svg>
+  </div>
+  <p class="foot__seal">By order of the Senate</p>
+  <p>Amazonprimea is the work of <a href="https://hermeslines.com" target="_blank" rel="noopener"><strong>Hermeslines</strong></a>, a third-party logistics house in Cleveland, Ohio.</p>
+  <p>Drachmae are wrought by the lawmen's review; redemption awaits their seal.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- Off-box availability banner driver (ADR 0029). Self-contained and loaded
+     BEFORE status.js so it lights up even if the dashboard script or its
+     cross-origin droplet fetches fail. Reads the prober's status.json from the
+     `status-data` branch via raw.githubusercontent.com — no droplet dependency,
+     so it tells the truth during a droplet outage. -->
+<script>
+(function () {
+  var OFFBOX_URL = 'https://raw.githubusercontent.com/lars589/amazonprimea-status/status-data/status.json';
+  var el = document.getElementById('offbox-status');
+  if (!el) return;
+
+  function fmtUtc(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var hh = String(d.getUTCHours()).padStart(2, '0');
+    var mm = String(d.getUTCMinutes()).padStart(2, '0');
+    return hh + ':' + mm + ' UTC';
+  }
+
+  function setState(cls, text) {
+    el.className = 'offbox-status offbox-status--' + cls;
+    el.textContent = text;
+  }
+
+  function update() {
+    fetch(OFFBOX_URL, { cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var cur = data && data.current;
+        var status = cur && cur.status;
+        var when = fmtUtc(cur && cur.t);
+        if (status === 'up') {
+          setState('up', '🟢 amazonprimea.com is operational — checked ' + when);
+        } else if (status === 'down') {
+          setState('down', '🔴 amazonprimea.com is DOWN — checked ' + when);
+        } else {
+          setState('unknown', 'status data is momentarily unavailable');
+        }
+      })
+      .catch(function () {
+        setState('unknown', 'status data is momentarily unavailable');
+      });
+  }
+
+  update();
+  setInterval(update, 60000);
+})();
+</script>
+
+<script src="status.js?v=2026-05-12-shipped-filter"></script>
+
+</body>
+</html>

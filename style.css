@@ -1,0 +1,1345 @@
+/* status.amazonprimea.com — public ledger of an ancient-Greek city.
+   Form factor: weathered marble + parchment, Cinzel inscription headings,
+   EB Garamond body. Square corners, hairline double-rules, no SaaS softness.
+   Palette stays inside the locked Mediterranean range. */
+
+:root {
+  /* aged marble + parchment */
+  --bg:           #ece0c2;   /* base — deeper than V1, slightly more yellowed */
+  --bg-card:      #f6ecd2;   /* tablet face */
+  --bg-deep:      #ddc99c;   /* recessed wells (stat blocks, cat tags) */
+  --bg-frame:     #e3d0a4;   /* outer frame channel between double rules */
+
+  /* ink + accents */
+  --ink:          #2a2110;   /* burnt umber — the carved letter */
+  --ink-soft:     #6e5b3a;   /* aged ink */
+  /* #409: bumped from #97825a (~2.6:1 against --bg) to meet WCAG AA 4.5:1
+     for the small italic labels that use this token. ~4.8:1 against --bg now,
+     still distinct enough from --ink-soft (#6e5b3a, ~5.1:1) to read as
+     "fainter ink" but no longer fails accessibility on small text. */
+  --ink-faint:    #735f3d;
+  --rule:         #8b6f2c;   /* antique gold rule */
+  --rule-soft:    #b89a55;
+  --accent:       #4a7d5c;   /* olive */
+  --accent-deep:  #2f5a3f;
+  --sea:          #2d6e7e;   /* aegean */
+  --terracotta:   #a85530;
+
+  --font-display: "Cinzel", "Cormorant Garamond", "Trajan Pro", "Iowan Old Style", Georgia, serif;
+  --font-body:    "EB Garamond", "Iowan Old Style", "Hoefler Text", Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+
+/* ---------- Off-box availability banner (ADR 0029) ----------
+   Full-width strip at the very top of the page. Reads off-box data (the
+   prober's status.json on the status-data branch via raw.githubusercontent.com),
+   so it stays truthful even when the droplet — and the rest of this dashboard's
+   data — is dark. Empty until the banner script fills it; collapses to nothing
+   when it has no class/text so there's no blank band on first paint. */
+.offbox-status {
+  width: 100%;
+  padding: 9px 16px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+.offbox-status:empty { display: none; }
+.offbox-status--up      { background: #2e7d32; }
+.offbox-status--down    { background: #b00020; }
+.offbox-status--unknown { background: #6b6b6b; color: #f2f2f2; }
+
+html {
+  background: var(--bg);
+  /* Bronze arrowhead as the ambient cursor (hotspot = tip at 0,0). Inherited
+     by everything; clickable elements override to the Hand of Hermes below. */
+  cursor: url('cursors/arrow.png') 0 0, auto;
+}
+
+/* Clickable affordance: the Hand of Hermes on standard interactive elements
+   (the arrowhead above stays the ambient default). Low specificity so
+   disabled / help / not-allowed states keep their own cursors. */
+a[href], button, summary, select, label[for],
+[role="button"], [role="tab"], [role="link"] {
+  cursor: url('cursors/hand-pointer.png') 4 1, pointer;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--bg);
+  /* subtle weathered-marble veining built from radial blooms + a vertical
+     wash so the page doesn't read as a flat color */
+  background-image:
+    radial-gradient(circle at 18% 12%, rgba(139, 111, 44, 0.08), transparent 45%),
+    radial-gradient(circle at 82% 88%, rgba(45, 110, 126, 0.07), transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(168, 85, 48, 0.04), transparent 70%),
+    linear-gradient(180deg, rgba(255, 250, 230, 0.18) 0%, transparent 30%, rgba(60, 40, 10, 0.04) 100%);
+  background-attachment: fixed;
+  line-height: 1.55;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent-deep);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule-soft);
+  transition: color 200ms, border-color 200ms;
+}
+
+a:hover { color: var(--terracotta); border-color: var(--terracotta); }
+
+/* ---------- Hero ---------- */
+
+.herm {
+  text-align: center;
+  padding: 72px 24px 28px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.herm__sigil {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
+  color: var(--ink);
+  opacity: 0.78;
+}
+
+.herm h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.4rem, 5.5vw, 3.6rem);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin: 0 0 14px;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255, 250, 230, 0.6);
+}
+
+.herm__epigraph {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 1.08rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+  margin: 0 0 22px;
+}
+
+.herm__sub {
+  font-size: 1.05rem;
+  color: var(--ink);
+  line-height: 1.65;
+  max-width: 560px;
+  margin: 0 auto 22px;
+}
+
+/* drop cap on the hero paragraph */
+.herm__sub::first-letter {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 3.2rem;
+  line-height: 0.85;
+  float: left;
+  margin: 6px 10px 0 0;
+  color: var(--rule);
+}
+
+.herm__meta {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.dot { margin: 0 10px; opacity: 0.55; }
+
+/* ---------- Banner / section rule ---------- */
+
+.rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 0 auto;
+  max-width: 800px;
+  padding: 18px 24px;
+  color: var(--rule);
+  position: relative;
+}
+
+.rule::before, .rule::after {
+  content: "";
+  flex: 1;
+  height: 0;
+  border-top: 1px solid var(--rule-soft);
+  box-shadow: 0 2px 0 -1px var(--rule-soft); /* second rule below */
+}
+
+.rule svg {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.rule--banner svg { width: 11px; height: 11px; }
+
+.rule--small {
+  max-width: 280px;
+  padding: 14px 0 18px;
+  margin-top: 0;
+}
+
+.rule--small::before, .rule--small::after {
+  box-shadow: none;
+  border-top-color: var(--rule);
+  opacity: 0.5;
+}
+
+/* ---------- Tablets (sections) ---------- */
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 24px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.tablet {
+  position: relative;
+  background: var(--bg-card);
+  /* double-rule frame: outer 1px ink rule + 4px parchment channel + inner
+     1px gold rule, achieved with one border + two box-shadows */
+  border: 1px solid var(--ink-soft);
+  border-radius: 0;
+  padding: 28px 32px 30px;
+  box-shadow:
+    inset 0 0 0 4px var(--bg-frame),
+    inset 0 0 0 5px var(--rule-soft),
+    0 2px 0 0 rgba(60, 40, 10, 0.10),
+    0 12px 32px -20px rgba(60, 40, 10, 0.55);
+  /* #409: leave room above each tablet so anchor links from the sticky
+     nav clear the strip. Roughly nav height (~36px) + breathing room. */
+  scroll-margin-top: 64px;
+}
+
+/* small carved corner ornaments (subtle, just interior tick marks) */
+.tablet::before, .tablet::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--rule);
+  opacity: 0.55;
+}
+.tablet::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+.tablet::after  { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+.tablet__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  margin: 0 0 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--rule-soft);
+  box-shadow: 0 2px 0 -1px var(--rule-soft);
+  padding-bottom: 18px;
+}
+
+.tablet__icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  color: var(--ink);
+  opacity: 0.82;
+  margin-top: 2px;
+}
+
+.tablet__heading { flex: 1; min-width: 0; }
+
+.tablet h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+
+.tablet__subtitle {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.98rem;
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.empty {
+  color: var(--ink-faint);
+  font-style: italic;
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* ---------- Versions / Works in Progress ---------- */
+
+.versions {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.version-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.version-row__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.version-row__name {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+
+.version-row__track {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  padding: 3px 10px 2px;
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-soft);
+  background: rgba(255, 250, 230, 0.4);
+}
+
+.version-row__track--product { color: var(--accent-deep); border-color: var(--accent); }
+.version-row__track--internal { color: var(--sea); border-color: var(--sea); }
+
+.version-row__count {
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+  font-style: italic;
+  font-variant-numeric: tabular-nums;
+}
+
+.version-row__desc {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 2px 0 4px;
+  max-width: 62ch;
+}
+
+.version-row__bar {
+  position: relative;
+  display: flex;
+  height: 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-soft);
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(60, 40, 10, 0.18);
+}
+
+/* Legacy single fill — kept for any consumer not yet migrated to segments. */
+.version-row__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(180deg, var(--accent), var(--accent-deep));
+  border-right: 1px solid var(--accent-deep);
+  transition: width 600ms ease-out;
+}
+
+.version-row__fill--internal {
+  background: linear-gradient(180deg, var(--sea), #1d4d5a);
+  border-right-color: #1d4d5a;
+}
+
+/* Stacked three-segment lifecycle bar (Phase 5 / #94). */
+.version-row__seg {
+  height: 100%;
+  transition: width 600ms ease-out;
+}
+.version-row__seg--shipped   { background: linear-gradient(180deg, var(--accent), var(--accent-deep)); }
+.version-row__seg--confirmed { background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 65%, white), var(--accent)); }
+.version-row__seg--completed { background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 30%, white), color-mix(in oklab, var(--accent) 55%, white)); }
+
+.version-row__seg--internal.version-row__seg--shipped   { background: linear-gradient(180deg, var(--sea), #1d4d5a); }
+.version-row__seg--internal.version-row__seg--confirmed { background: linear-gradient(180deg, color-mix(in oklab, var(--sea) 65%, white), var(--sea)); }
+.version-row__seg--internal.version-row__seg--completed { background: linear-gradient(180deg, color-mix(in oklab, var(--sea) 30%, white), color-mix(in oklab, var(--sea) 55%, white)); }
+
+.version-row__pct {
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Done-when criteria (per-version checklist) ---------- */
+
+.done-when {
+  margin: 4px 0 0;
+  padding: 0;
+  border-top: 1px dashed var(--rule-soft);
+  padding-top: 10px;
+}
+
+.done-when__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: url('cursors/hand-pointer.png') 4 1, pointer;
+  list-style: none;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.done-when__summary::-webkit-details-marker { display: none; }
+
+.done-when__summary::before {
+  content: "▸";
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--rule);
+  transition: transform 180ms;
+  display: inline-block;
+  width: 0.8em;
+}
+
+.done-when[open] > .done-when__summary::before {
+  transform: rotate(90deg);
+}
+
+.done-when__count {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding: 2px 8px 1px;
+  border: 1px solid var(--rule-soft);
+  background: rgba(255, 250, 230, 0.4);
+}
+
+.done-when__count--all   { color: var(--accent-deep); border-color: var(--accent); }
+.done-when__count--none  { color: var(--ink-faint); }
+
+.done-when__list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.done-when__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  padding-left: 4px;
+}
+
+.done-when__mark {
+  flex: 0 0 1.2em;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--ink-faint);
+  text-align: center;
+  user-select: none;
+}
+
+.done-when__item--satisfied .done-when__mark {
+  color: var(--accent-deep);
+}
+
+.done-when__item--satisfied .done-when__text {
+  color: var(--ink);
+}
+
+.done-when__text { flex: 1; }
+
+/* ---------- Treasury (cost summary) ---------- */
+
+.cost-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.stat {
+  text-align: center;
+  padding: 16px 12px 14px;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-soft);
+  position: relative;
+}
+
+.stat::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid var(--bg-card);
+  pointer-events: none;
+}
+
+.stat__num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.9rem;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+}
+
+.stat__label {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin-top: 6px;
+  letter-spacing: 0.02em;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 260px;
+  margin: 0 0 10px;
+  padding: 8px 4px 0;
+}
+
+.chart-note {
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin: 0 0 18px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* V3.R83 (#303): attributed-vs-unattributed spend headline above the chips. */
+.cost-split {
+  font-size: 0.95rem;
+  color: var(--ink);
+  text-align: center;
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.cost-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.cost-cat {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  padding: 5px 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-cat strong {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  margin-right: 4px;
+}
+
+/* ---------- Lately Inscribed (shipped feed) ---------- */
+
+/* GDS #191: in-head date-range filter. Sits to the right of the heading on
+   wide layouts; falls beneath it on narrow viewports via the existing
+   tablet__head media query at the bottom of this file. */
+.tablet__filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.tablet__filter-label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+}
+
+.tablet__filter-select {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--rule);
+  padding: 5px 26px 5px 10px;
+  cursor: url('cursors/hand-pointer.png') 4 1, pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
+                    linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.tablet__filter-select:hover,
+.tablet__filter-select:focus {
+  border-color: var(--ink-soft);
+  outline: none;
+  background-color: var(--rule-soft);
+}
+
+.shipped {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.shipped li:not(.empty):not(.empty-row) {
+  padding: 16px 0 14px;
+  border-bottom: 1px solid var(--rule-soft);
+  position: relative;
+}
+
+.shipped li:not(.empty):not(.empty-row)::before {
+  content: "❦";
+  position: absolute;
+  left: 0;
+  top: 17px;
+  color: var(--rule);
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.shipped li:not(.empty):not(.empty-row) {
+  padding-left: 22px;
+}
+
+.shipped li:last-child { border-bottom: none; }
+
+/* GDS #191: invisible placeholder rows pad short pages so the section
+   height is constant across pages and across date-range changes. Matches
+   the vertical footprint of a real .shipped li: 16px top padding + ~1.5em
+   title (24px) + 4px gap + ~0.92rem italic meta (~21px) + 14px bottom
+   padding + 1px border ≈ 80px. aria-hidden in markup keeps them out of
+   the a11y tree. */
+.shipped li.empty-row {
+  visibility: hidden;
+  min-height: 83px;
+  border-bottom: 1px solid transparent;
+}
+
+.shipped__title {
+  font-size: 1.05rem;
+  color: var(--ink);
+  margin: 0 0 4px;
+  line-height: 1.5;
+}
+
+.shipped__meta {
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin: 0;
+}
+
+.shipped__version {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  padding: 2px 8px 1px;
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-soft);
+  margin-right: 10px;
+  vertical-align: 2px;
+  font-style: normal;
+}
+
+.shipped-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.shipped-pager__btn {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  padding: 7px 14px 6px;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  cursor: url('cursors/hand-pointer.png') 4 1, pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.shipped-pager__btn:hover:not(:disabled) {
+  background: var(--rule-soft);
+  border-color: var(--ink-soft);
+}
+
+.shipped-pager__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.shipped-pager__info {
+  font-family: var(--font-body);
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+/* ---------- Architects (leaderboard) ---------- */
+
+.leader {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: leader;
+}
+
+.leader li:not(.empty) {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  counter-increment: leader;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.leader li:not(.empty)::before {
+  content: counter(leader, upper-roman);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  color: var(--rule);
+  width: 42px;
+  text-align: right;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.leader li:last-child { border-bottom: none; }
+
+.leader__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 0;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-soft);
+  flex-shrink: 0;
+  filter: sepia(0.25) saturate(0.85);
+}
+
+.leader__name {
+  flex-grow: 1;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+
+.leader__login {
+  font-family: var(--font-body);
+  font-style: italic;
+  letter-spacing: 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  margin-left: 8px;
+  font-weight: 400;
+  text-transform: none;
+}
+
+.leader__credits {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-deep);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+}
+
+.leader__credits-unit {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-left: 4px;
+  letter-spacing: 0;
+}
+
+/* Inline laurels next to each architect's name. Slightly dimmed so the
+   name still leads the row; emoji glyphs would otherwise punch above the
+   marble palette. PMS-V2 #54 */
+.leader__achievements {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 10px;
+  vertical-align: 1px;
+  line-height: 1;
+}
+.leader__ach {
+  font-size: 0.95rem;
+  line-height: 1;
+  filter: saturate(0.8);
+  cursor: help;
+}
+
+/* ---------- Footer ---------- */
+
+.foot {
+  text-align: center;
+  padding: 24px 24px 56px;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  font-style: italic;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.foot p { margin: 6px 0; line-height: 1.55; }
+
+.foot strong {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.foot__seal {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  color: var(--rule);
+  margin: 6px 0 14px !important;
+}
+
+/* ---------- Uptime / The Watch ---------- */
+
+.uptime-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.uptime-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.uptime-row__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.uptime-row__name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uptime-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.uptime-dot--up       { background: #3a7d52; box-shadow: 0 0 4px rgba(58,125,82,0.5); }
+.uptime-dot--degraded { background: #a86a2a; box-shadow: 0 0 4px rgba(168,106,42,0.5); }
+.uptime-dot--down     { background: #a83030; box-shadow: 0 0 4px rgba(168,48,48,0.5); }
+.uptime-dot--unknown  { background: var(--ink-faint); }
+
+.uptime-row__name {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+
+.uptime-badge {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-style: italic;
+  padding: 1px 7px;
+  border-radius: 2px;
+  letter-spacing: 0.02em;
+}
+.uptime-badge--up       { background: rgba(58,125,82,0.12);  color: #2a5c3c; border: 1px solid rgba(58,125,82,0.28); }
+.uptime-badge--degraded { background: rgba(168,106,42,0.12); color: #7a4a10; border: 1px solid rgba(168,106,42,0.28); }
+.uptime-badge--down     { background: rgba(168,48,48,0.12);  color: #8a2020; border: 1px solid rgba(168,48,48,0.28); }
+.uptime-badge--unknown  { background: var(--bg-deep); color: var(--ink-faint); border: 1px solid var(--rule-soft); }
+
+.uptime-row__pct {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* 90-bar history strip */
+.uptime-bars {
+  display: flex;
+  gap: 2px;
+  align-items: stretch;
+  height: 28px;
+  margin-top: 2px;
+}
+
+.uptime-bar {
+  flex: 1;
+  min-width: 0;
+  border-radius: 2px;
+  transition: opacity 0.1s;
+  cursor: default;
+}
+.uptime-bar:hover { opacity: 0.7; }
+.uptime-bar--up       { background: #3a7d52; }
+.uptime-bar--degraded { background: #a86a2a; }
+.uptime-bar--down     { background: #a83030; }
+.uptime-bar--unknown  { background: var(--bg-deep); }
+
+.uptime-bars__labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}
+
+.uptime-row__no-history {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--ink-faint);
+  margin: 4px 0 0;
+}
+
+/* Divider between service rows */
+.uptime-row + .uptime-row {
+  padding-top: 18px;
+  border-top: 1px solid rgba(139,111,44,0.18);
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 540px) {
+  body { font-size: 17px; }
+  .herm { padding: 44px 18px 22px; }
+  .herm h1 {
+    font-size: clamp(1.9rem, 8vw, 2.4rem);
+    letter-spacing: 0.06em;
+  }
+  .herm__sigil { width: 60px; height: 60px; }
+  .tablet { padding: 22px 18px 24px; }
+  .tablet__head { gap: 12px; flex-wrap: wrap; }
+  .tablet h2 { font-size: 1.15rem; letter-spacing: 0.08em; }
+  .tablet__icon { width: 28px; height: 28px; }
+  /* GDS #191: on narrow viewports, push the filter onto its own row beneath
+     the heading so the subtitle doesn't get squeezed to a single column. */
+  .tablet__filter { width: 100%; justify-content: flex-end; margin-top: 2px; }
+  .stat__num { font-size: 1.5rem; }
+  .stat__label { font-size: 0.82rem; }
+  .version-row__name { font-size: 0.95rem; letter-spacing: 0.04em; }
+  .leader li:not(.empty) { gap: 10px; }
+  .leader li:not(.empty)::before { width: 32px; font-size: 1rem; }
+  .leader__name { font-size: 0.92rem; letter-spacing: 0.04em; }
+  .leader__login { display: block; margin-left: 0; margin-top: 2px; }
+  main { padding: 16px 16px 40px; gap: 22px; }
+
+  .world-snapshot img { max-width: 100%; }
+  .world-timeline__thumb { width: 96px; height: auto; }
+}
+
+/* ---------- World snapshot ---------- */
+
+/* The world section breaks out of main's 800px column on wide screens so
+   the snapshot can render near its native 960px width — sprites are
+   recognizable at full size, lost in the sand texture below ~750px. On
+   narrow screens we just stay inside the column. */
+@media (min-width: 1080px) {
+  .tablet.tablet--wide {
+    margin-left: -140px;
+    margin-right: -140px;
+  }
+}
+
+.world-snapshot {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.world-snapshot img {
+  display: block;
+  margin: 0 auto;
+  width: 960px;
+  max-width: 100%;
+  /* Preserve native 960×576 (5:3) aspect when CSS scales width on narrow
+     screens. Without height:auto the HTML height attribute is honored and
+     the image stretches vertically. */
+  height: auto;
+  aspect-ratio: 5 / 3;
+  /* pixel-art rendering: crisp upscaling, no anti-alias blur */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  border: 1px solid var(--rule-soft);
+  box-shadow: 0 2px 12px -4px rgba(60, 40, 10, 0.40);
+}
+
+.world-snapshot__caption {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  margin: 12px 0 0;
+}
+
+.world-snapshot__caption strong {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.85em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-right: 2px;
+}
+
+.world-snapshot__sha {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  font-style: normal;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+}
+
+/* Horizontal scroll strip of thumbnails */
+.world-timeline {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  /* custom scrollbar to match the aged-parchment aesthetic */
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-soft) transparent;
+}
+
+.world-timeline::-webkit-scrollbar { height: 5px; }
+.world-timeline::-webkit-scrollbar-track { background: transparent; }
+.world-timeline::-webkit-scrollbar-thumb {
+  background: var(--rule-soft);
+  border-radius: 3px;
+}
+
+.world-timeline:empty { display: none; }
+
+.world-timeline__item {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: url('cursors/hand-pointer.png') 4 1, pointer;
+  opacity: 0.72;
+  transition: opacity 180ms;
+}
+
+.world-timeline__item:hover,
+.world-timeline__item[aria-current="true"] {
+  opacity: 1;
+}
+
+.world-timeline__item[aria-current="true"] .world-timeline__thumb {
+  border-color: var(--rule);
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+.world-timeline__thumb {
+  display: block;
+  width: 200px;
+  height: auto;
+  aspect-ratio: 5 / 3;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  border: 1px solid var(--rule-soft);
+}
+
+.world-timeline__date {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+
+.world-note {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--ink-faint);
+  margin: 12px 0 0;
+  text-align: right;
+}
+
+/* --- Sticky status nav (#409) ----------------------------------------------
+   Same design language as the hall's chip strip in public-builders/style.css
+   (.hall-nav__*). Independently styled here because the two surfaces don't
+   share a stylesheet; this duplication is intentional and per the task spec
+   to keep parallel-safety with anyone editing the hall. Visual rhythm is
+   identical: Cinzel-uppercase carved labels, terracotta active underline,
+   parchment background with hairline bottom rule. */
+
+.status-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(243, 230, 198, 0.96);
+  backdrop-filter: blur(2px);
+  border-bottom: 1px solid var(--rule);
+  box-shadow: inset 0 -1px 0 var(--rule-soft);
+  padding: 6px 0 4px;
+  margin: 0;
+}
+.status-nav__inner {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+.status-nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-items: baseline;
+}
+.status-nav__chip {
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 6px 2px 4px;
+  cursor: url('cursors/hand-pointer.png') 4 1, pointer;
+  transition: color 150ms, border-color 150ms;
+  white-space: nowrap;
+}
+.status-nav__chip:hover {
+  color: var(--ink);
+  border-bottom-color: var(--rule-soft);
+}
+.status-nav__chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.status-nav__chip--active {
+  color: var(--terracotta);
+  border-bottom-color: var(--terracotta);
+}
+
+@media (max-width: 640px) {
+  .status-nav { padding: 4px 0 2px; }
+  .status-nav__inner { padding: 0 12px; }
+  .status-nav__list {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    gap: 0 12px;
+    padding-bottom: 2px;
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+  }
+  .status-nav__chip {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+  }
+  /* Tablets need a touch less clearance under the smaller mobile nav. */
+  .tablet { scroll-margin-top: 56px; }
+}
+
+/* --- Headline strip (#409) -------------------------------------------------
+   Above-the-fold answer to "is the project alive?" plus three other common
+   visitor questions. Uses the existing .stat block from the cost summary
+   for visual rhythm — no new card vocabulary invented. Status-coloured
+   number for the standing card so it reads at a glance. */
+
+.tablet--headline {
+  padding: 22px 32px 24px;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.headline-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.headline-stat {
+  text-align: center;
+  position: relative;
+}
+.headline-stat .stat__num {
+  font-size: 1.55rem;
+  letter-spacing: 0.04em;
+}
+.headline-stat .stat__label {
+  font-size: 0.84rem;
+  margin-top: 6px;
+}
+.headline-stat--standing-up    .stat__num { color: var(--accent-deep); }
+.headline-stat--standing-down  .stat__num { color: var(--terracotta); }
+.headline-stat--standing-warn  .stat__num { color: #a86a2a; }
+.headline-bar {
+  margin: 10px auto 0;
+  width: 80%;
+  height: 5px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule-soft);
+}
+.headline-bar__fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 400ms ease;
+}
+.headline-bar__fill--warn { background: #a86a2a; }
+.headline-bar__fill--over { background: var(--terracotta); }
+
+@media (max-width: 768px) {
+  .headline-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .headline-grid { grid-template-columns: 1fr; }
+}
+
+/* --- Snapshot history collapsed toggle (#409) ----------------------------- */
+
+.world-history {
+  margin-top: 16px;
+}
+.world-history__summary {
+  cursor: url('cursors/hand-pointer.png') 4 1, pointer;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding: 8px 0;
+  border-top: 1px dashed var(--rule-soft);
+  list-style: none;
+  user-select: none;
+}
+.world-history__summary::-webkit-details-marker { display: none; }
+.world-history__summary::before {
+  content: "▸ ";
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 150ms;
+}
+.world-history[open] > .world-history__summary::before {
+  content: "▾ ";
+}
+.world-history__summary:hover { color: var(--ink); }
+
+/* --- Uptime bar height bump (#409) ----------------------------------------
+   Bars were 28px tall — usable but tappable-target-borderline on phones.
+   ~44px on mobile (+ a couple px tap zone via padding) brings each daily
+   bucket within touch-target guidelines while reading as the same chart. */
+@media (max-width: 640px) {
+  .uptime-bars { height: 44px; }
+}
