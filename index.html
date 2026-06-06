@@ -9,18 +9,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2026-05-30-cursor-2">
+  <link rel="stylesheet" href="/style.css?v=2026-06-06-statusreorg2">
+  <!-- #737: off-box mirror runs cross-origin against the droplet. -->
+  <script>window.STATUS_API_BASE = 'https://amazonprimea.com';</script>
 </head>
 <body>
-
-<!-- Off-box availability banner (ADR 0029). This is the ONE thing on the page
-     that stays correct when the droplet (and its /api) are dark, because it
-     reads OFF-BOX data: a status.json published to this repo's `status-data`
-     branch by a GitHub-hosted prober, served from raw.githubusercontent.com.
-     Everything else below is the live dashboard, fed cross-origin from the
-     droplet — those panels degrade gracefully (fetch .catch → null) when the
-     droplet is down; this strip does not. -->
+<!-- Off-box availability banner (ADR 0029) — injected by scripts/status-mirror-sync.js.
+     The ONE element that stays truthful when the droplet is dark: it reads the
+     prober's status.json from this repo's status-data branch, no droplet dependency. -->
 <div id="offbox-status" role="status" aria-live="polite"></div>
+
 
 <!-- Hidden SVG sprite — referenced via <use href="#id"> below. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -185,65 +183,17 @@
     </div>
   </section>
 
-  <section class="tablet tablet--wide" id="world-tablet" aria-labelledby="world-heading">
+  <section class="tablet" id="uptime-tablet" aria-labelledby="uptime-heading">
     <div class="tablet__head">
-      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-map"/></svg>
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-eye"/></svg>
       <div class="tablet__heading">
-        <h2 id="world-heading">The World</h2>
-        <p class="tablet__subtitle">A true-to-life portrait of Amazonprimea as she stands today, rendered from the city's own stones.</p>
+        <h2 id="uptime-heading">The Watch</h2>
+        <p class="tablet__subtitle">The standing of each pillar — whether it holds or has fallen.</p>
       </div>
     </div>
-    <div id="world-snapshot" class="world-snapshot">
-      <p class="empty">The cartographers are still at their survey…</p>
+    <div id="uptime" class="uptime-list">
+      <p class="empty">The sentinels are taking their positions…</p>
     </div>
-    <!-- #409: snapshot history collapsed behind a toggle. The latest snapshot
-         above is the prime view; the timeline of older snapshots is reference
-         material that previously ate ~300px of prime real estate. -->
-    <details class="world-history" id="world-history">
-      <summary class="world-history__summary">Show history of earlier portraits</summary>
-      <div id="world-timeline" class="world-timeline" aria-label="World snapshots over time"></div>
-      <p class="world-note" id="world-note" hidden>A new portrait is set down each time the city's stones are reshaped. Scroll to see how Amazonprimea has grown.</p>
-    </details>
-  </section>
-
-  <section class="tablet" id="versions-tablet" aria-labelledby="versions-heading">
-    <div class="tablet__head">
-      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-column"/></svg>
-      <div class="tablet__heading">
-        <h2 id="versions-heading">Works in Progress</h2>
-        <p class="tablet__subtitle">Each endeavor, and how near it stands to completion.</p>
-      </div>
-    </div>
-    <div id="versions" class="versions">
-      <p class="empty">The masons are at their tools…</p>
-    </div>
-  </section>
-
-  <section class="tablet" id="shipped-tablet" aria-labelledby="shipped-heading">
-    <div class="tablet__head">
-      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-scroll"/></svg>
-      <div class="tablet__heading">
-        <h2 id="shipped-heading">Lately Inscribed</h2>
-        <p class="tablet__subtitle">Newest entries set down upon the ledger.</p>
-      </div>
-      <div class="tablet__filter">
-        <label for="shipped-range" class="tablet__filter-label">Window</label>
-        <select id="shipped-range" class="tablet__filter-select" aria-label="Filter inscriptions by date range">
-          <option value="7">Last 7 days</option>
-          <option value="30" selected>Last 30 days</option>
-          <option value="90">Last 90 days</option>
-          <option value="all">All time</option>
-        </select>
-      </div>
-    </div>
-    <ul id="shipped" class="shipped">
-      <li class="empty">No works yet inscribed.</li>
-    </ul>
-    <nav id="shipped-pager" class="shipped-pager" hidden aria-label="Lately Inscribed pages">
-      <button type="button" id="shipped-prev" class="shipped-pager__btn" aria-label="Previous page">‹ earlier page</button>
-      <span id="shipped-pageinfo" class="shipped-pager__info" aria-live="polite">page 1 of 1</span>
-      <button type="button" id="shipped-next" class="shipped-pager__btn" aria-label="Next page">later page ›</button>
-    </nav>
   </section>
 
   <section class="tablet" id="leader-tablet" aria-labelledby="leader-heading">
@@ -257,6 +207,19 @@
     <ol id="leaderboard" class="leader">
       <li class="empty">No architects yet — be the first to lay a stone.</li>
     </ol>
+  </section>
+
+  <section class="tablet" id="versions-tablet" aria-labelledby="versions-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-column"/></svg>
+      <div class="tablet__heading">
+        <h2 id="versions-heading">Works in Progress</h2>
+        <p class="tablet__subtitle">Each endeavor, and how near it stands to completion.</p>
+      </div>
+    </div>
+    <div id="versions" class="versions">
+      <p class="empty">The masons are at their tools…</p>
+    </div>
   </section>
 
   <section class="tablet" id="cost-tablet" aria-labelledby="cost-heading">
@@ -297,103 +260,52 @@
     <div id="cost-builders" class="cost-cats"></div>
   </section>
 
-  <section class="tablet" id="grade-tablet" aria-labelledby="grade-heading">
+  <section class="tablet" id="shipped-tablet" aria-labelledby="shipped-heading">
     <div class="tablet__head">
-      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-eye"/></svg>
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-scroll"/></svg>
       <div class="tablet__heading">
-        <h2 id="grade-heading">The Stonemason's Mark</h2>
-        <p class="tablet__subtitle">Each work is marked for quality before its drachmae are paid.</p>
+        <h2 id="shipped-heading">Lately Inscribed</h2>
+        <p class="tablet__subtitle">Newest entries set down upon the ledger.</p>
+      </div>
+      <div class="tablet__filter">
+        <label for="shipped-range" class="tablet__filter-label">Window</label>
+        <select id="shipped-range" class="tablet__filter-select" aria-label="Filter inscriptions by date range">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="all">All time</option>
+        </select>
       </div>
     </div>
-    <div class="cost-summary" id="grade-stats">
-      <div class="stat">
-        <div class="stat__num" id="grade-avg">—</div>
-        <div class="stat__label">avg mark, last 7 days</div>
-      </div>
-      <div class="stat">
-        <div class="stat__num" id="grade-pass-rate">—</div>
-        <div class="stat__label">passed the inspector</div>
-      </div>
-      <div class="stat">
-        <div class="stat__num" id="grade-n">—</div>
-        <div class="stat__label">works graded</div>
-      </div>
-      <div class="stat">
-        <div class="stat__num" id="grade-threshold">—</div>
-        <div class="stat__label">passing mark</div>
-      </div>
-    </div>
-    <div class="chart-wrap">
-      <canvas id="grade-chart" aria-label="rolling daily quality marks" role="img"></canvas>
-    </div>
-    <p class="chart-note">A work is sealed and paid only when the inspector's mark meets the passing threshold. The line below shows the city's average mark, day by day.</p>
+    <ul id="shipped" class="shipped">
+      <li class="empty">No works yet inscribed.</li>
+    </ul>
+    <nav id="shipped-pager" class="shipped-pager" hidden aria-label="Lately Inscribed pages">
+      <button type="button" id="shipped-prev" class="shipped-pager__btn" aria-label="Previous page">‹ earlier page</button>
+      <span id="shipped-pageinfo" class="shipped-pager__info" aria-live="polite">page 1 of 1</span>
+      <button type="button" id="shipped-next" class="shipped-pager__btn" aria-label="Next page">later page ›</button>
+    </nav>
   </section>
 
-  <section class="tablet" id="drift-tablet" aria-labelledby="drift-heading">
+  <section class="tablet tablet--wide" id="world-tablet" aria-labelledby="world-heading">
     <div class="tablet__head">
-      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-eye"/></svg>
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-map"/></svg>
       <div class="tablet__heading">
-        <h2 id="drift-heading">The Surveyor's Reckoning</h2>
-        <p class="tablet__subtitle">How well the senate's estimates match the hours truly spent.</p>
+        <h2 id="world-heading">The World</h2>
+        <p class="tablet__subtitle">A true-to-life portrait of Amazonprimea as she stands today, rendered from the city's own stones.</p>
       </div>
     </div>
-    <div class="cost-summary" id="drift-stats">
-      <div class="stat">
-        <div class="stat__num" id="drift-median">—</div>
-        <div class="stat__label">median ratio (actual / est)</div>
-      </div>
-      <div class="stat">
-        <div class="stat__num" id="drift-sample">—</div>
-        <div class="stat__label">tasks measured</div>
-      </div>
+    <div id="world-snapshot" class="world-snapshot">
+      <p class="empty">The cartographers are still at their survey…</p>
     </div>
-    <div id="drift-versions" class="cost-cats"></div>
-    <p class="chart-note">A ratio of 1.0 means estimates were exact. Above 1.0 means work took longer than foreseen; below 1.0 means it went swifter.</p>
-  </section>
-
-  <section class="tablet" id="repo-tablet" aria-labelledby="repo-heading">
-    <div class="tablet__head">
-      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-eye"/></svg>
-      <div class="tablet__heading">
-        <h2 id="repo-heading">The Mason's Ledger</h2>
-        <p class="tablet__subtitle">The weight of the city's stonework — and the rubble left behind.</p>
-      </div>
-    </div>
-    <div class="cost-summary" id="repo-stats">
-      <div class="stat">
-        <div class="stat__num" id="repo-loc">—</div>
-        <div class="stat__label">lines of stonework</div>
-      </div>
-      <div class="stat">
-        <div class="stat__num" id="repo-dead">—</div>
-        <div class="stat__label">abandoned exports</div>
-      </div>
-      <div class="stat">
-        <div class="stat__num" id="repo-branches">—</div>
-        <div class="stat__label">unmerged works</div>
-      </div>
-      <div class="stat">
-        <div class="stat__num" id="repo-confirmed">—</div>
-        <div class="stat__label">sealed, not yet laid</div>
-      </div>
-    </div>
-    <div class="chart-wrap">
-      <canvas id="repo-chart" aria-label="repo health trend over time" role="img"></canvas>
-    </div>
-    <p class="chart-note">Lines of stonework is the total of the city's source. Abandoned exports and unmerged works are the rubble that accrues when a builder writes more than the city needs; the lines below trace how that weight shifts day by day.</p>
-  </section>
-
-  <section class="tablet" id="uptime-tablet" aria-labelledby="uptime-heading">
-    <div class="tablet__head">
-      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-eye"/></svg>
-      <div class="tablet__heading">
-        <h2 id="uptime-heading">The Watch</h2>
-        <p class="tablet__subtitle">The standing of each pillar — whether it holds or has fallen.</p>
-      </div>
-    </div>
-    <div id="uptime" class="uptime-list">
-      <p class="empty">The sentinels are taking their positions…</p>
-    </div>
+    <!-- #409: snapshot history collapsed behind a toggle. The latest snapshot
+         above is the prime view; the timeline of older snapshots is reference
+         material that previously ate ~300px of prime real estate. -->
+    <details class="world-history" id="world-history">
+      <summary class="world-history__summary">Show history of earlier portraits</summary>
+      <div id="world-timeline" class="world-timeline" aria-label="World snapshots over time"></div>
+      <p class="world-note" id="world-note" hidden>A new portrait is set down each time the city's stones are reshaped. Scroll to see how Amazonprimea has grown.</p>
+    </details>
   </section>
 
 </main>
@@ -408,60 +320,35 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-<!-- Off-box availability banner driver (ADR 0029). Self-contained and loaded
-     BEFORE status.js so it lights up even if the dashboard script or its
-     cross-origin droplet fetches fail. Reads the prober's status.json from the
-     `status-data` branch via raw.githubusercontent.com — no droplet dependency,
-     so it tells the truth during a droplet outage. -->
+<!-- Off-box availability banner driver (ADR 0029) — loaded before status.js so
+     it lights up even if the dashboard script or its cross-origin fetches fail. -->
 <script>
 (function () {
   var OFFBOX_URL = 'https://raw.githubusercontent.com/lars589/amazonprimea-status/status-data/status.json';
   var el = document.getElementById('offbox-status');
   if (!el) return;
-
   function fmtUtc(iso) {
     var d = new Date(iso);
     if (isNaN(d.getTime())) return '';
-    var hh = String(d.getUTCHours()).padStart(2, '0');
-    var mm = String(d.getUTCMinutes()).padStart(2, '0');
-    return hh + ':' + mm + ' UTC';
+    return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0') + ' UTC';
   }
-
-  function setState(cls, text) {
-    el.className = 'offbox-status offbox-status--' + cls;
-    el.textContent = text;
-  }
-
+  function setState(cls, text) { el.className = 'offbox-status offbox-status--' + cls; el.textContent = text; }
   function update() {
     fetch(OFFBOX_URL, { cache: 'no-store' })
-      .then(function (res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      })
+      .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
       .then(function (data) {
-        var cur = data && data.current;
-        var status = cur && cur.status;
-        var when = fmtUtc(cur && cur.t);
-        if (status === 'up') {
-          setState('up', '🟢 amazonprimea.com is operational — checked ' + when);
-        } else if (status === 'down') {
-          setState('down', '🔴 amazonprimea.com is DOWN — checked ' + when);
-        } else {
-          setState('unknown', 'status data is momentarily unavailable');
-        }
+        var cur = data && data.current, status = cur && cur.status, when = fmtUtc(cur && cur.t);
+        if (status === 'up') setState('up', '\uD83D\uDFE2 amazonprimea.com is operational \u2014 checked ' + when);
+        else if (status === 'down') setState('down', '\uD83D\uDD34 amazonprimea.com is DOWN \u2014 checked ' + when);
+        else setState('unknown', 'status data is momentarily unavailable');
       })
-      .catch(function () {
-        setState('unknown', 'status data is momentarily unavailable');
-      });
+      .catch(function () { setState('unknown', 'status data is momentarily unavailable'); });
   }
-
   update();
   setInterval(update, 60000);
 })();
 </script>
-
-<script src="status.js?v=2026-05-12-shipped-filter"></script>
+<script src="/status.js?v=2026-06-06-statusreorg2"></script>
 
 </body>
 </html>

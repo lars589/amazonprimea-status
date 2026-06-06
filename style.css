@@ -31,33 +31,58 @@
 
 * { box-sizing: border-box; }
 
-/* ---------- Off-box availability banner (ADR 0029) ----------
-   Full-width strip at the very top of the page. Reads off-box data (the
-   prober's status.json on the status-data branch via raw.githubusercontent.com),
-   so it stays truthful even when the droplet — and the rest of this dashboard's
-   data — is dark. Empty until the banner script fills it; collapses to nothing
-   when it has no class/text so there's no blank band on first paint. */
-.offbox-status {
-  width: 100%;
-  padding: 9px 16px;
-  text-align: center;
-  font-family: var(--font-body);
-  font-size: 0.98rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: #fff;
-}
-.offbox-status:empty { display: none; }
-.offbox-status--up      { background: #2e7d32; }
-.offbox-status--down    { background: #b00020; }
-.offbox-status--unknown { background: #6b6b6b; color: #f2f2f2; }
-
 html {
   background: var(--bg);
   /* Bronze arrowhead as the ambient cursor (hotspot = tip at 0,0). Inherited
      by everything; clickable elements override to the Hand of Hermes below. */
   cursor: url('cursors/arrow.png') 0 0, auto;
 }
+
+/* #731: themed scrollbars + base select theming across the status dashboard,
+   matching the builder surface — no page shows a default grey OS scrollbar or a
+   bare white dropdown. (The .world-timeline keeps its own thinner override.) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-soft) var(--bg-frame);
+}
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--bg-frame); }
+::-webkit-scrollbar-thumb {
+  background: var(--rule-soft);
+  border-radius: 6px;
+  border: 3px solid var(--bg-frame);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--rule); }
+::-webkit-scrollbar-corner { background: var(--bg-frame); }
+
+/* ---------- Off-box availability banner (ADR 0029, #737) ----------
+   Only renders on the off-box GitHub Pages mirror, whose index.html injects the
+   #offbox-status div + driver script; on the droplet the div is absent so these
+   rules are inert. Kept here so public-status/style.css is byte-identical on
+   both hosts and the mirror sync stays a pure copy. */
+.offbox-status {
+  font-family: var(--font-body);
+  text-align: center;
+  color: #fff;
+  padding: 6px 12px;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+}
+.offbox-status:empty { display: none; }
+.offbox-status--up      { background: #2e7d32; }
+.offbox-status--down    { background: #b00020; }
+.offbox-status--unknown { background: #6b6b6b; color: #f2f2f2; }
+
+select {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+select option { background: var(--bg-card); color: var(--ink); }
 
 /* Clickable affordance: the Hand of Hermes on standard interactive elements
    (the arrowhead above stays the ambient default). Low specificity so

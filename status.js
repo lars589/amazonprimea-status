@@ -1,14 +1,14 @@
 // status.amazonprimea.com — public dashboard JS.
 // Polls /api/gds/public/* every 60 seconds. No auth, no SPA framework.
 
-// ADR 0029: this mirror is hosted OFF the droplet (GitHub Pages), so every
-// dashboard fetch is cross-origin against the live droplet. The droplet's
-// /api/gds/public/* sends Access-Control-Allow-Origin: *, and every call below
-// goes through fetchJson()/fetch() with a .catch → null, so when the droplet is
-// down these panels degrade to their empty/placeholder state rather than break
-// the page. The always-truthful availability banner (see index.html) does NOT
-// depend on this — it reads off-box data from the status-data branch.
-const API = 'https://amazonprimea.com';
+// API base for the public read endpoints (#737). Empty = same-origin, the case
+// when this file is served by the droplet itself (status.amazonprimea.com
+// proxies /api/* to the same Node process). The OFF-BOX GitHub Pages mirror
+// (lars589/amazonprimea-status, ADR 0029) injects window.STATUS_API_BASE =
+// 'https://amazonprimea.com' in its <head> so the same byte-identical file
+// fetches cross-origin from the droplet there (CORS is open). Keeping this file
+// identical on both hosts is what lets the mirror sync be a pure copy.
+const API = (typeof window !== 'undefined' && window.STATUS_API_BASE) || '';
 
 const els = {
   uptime: document.getElementById('uptime'),
@@ -21,21 +21,6 @@ const els = {
   costBuilders: document.getElementById('cost-builders'),
   costAttributionSplit: document.getElementById('cost-attribution-split'),
   costChart: document.getElementById('cost-chart'),
-  driftMedian: document.getElementById('drift-median'),
-  driftSample: document.getElementById('drift-sample'),
-  driftVersions: document.getElementById('drift-versions'),
-  // Task 197 — Stonemason's Mark (quality grade tile)
-  gradeAvg: document.getElementById('grade-avg'),
-  gradePassRate: document.getElementById('grade-pass-rate'),
-  gradeN: document.getElementById('grade-n'),
-  gradeThreshold: document.getElementById('grade-threshold'),
-  gradeChart: document.getElementById('grade-chart'),
-  // V3.R91 #352 — The Mason's Ledger (repo-health tile)
-  repoLoc: document.getElementById('repo-loc'),
-  repoDead: document.getElementById('repo-dead'),
-  repoBranches: document.getElementById('repo-branches'),
-  repoConfirmed: document.getElementById('repo-confirmed'),
-  repoChart: document.getElementById('repo-chart'),
   shipped: document.getElementById('shipped'),
   shippedPager: document.getElementById('shipped-pager'),
   shippedPrev: document.getElementById('shipped-prev'),
@@ -51,8 +36,6 @@ const els = {
 
 const ANNUAL_BUDGET_USD = 5000;
 let costChart = null;
-let gradeChart = null;
-let repoChart = null;
 
 // ---------- helpers ----------
 
@@ -98,16 +81,13 @@ async function fetchJson(path) {
 // in ~756px of content width without wrapping.
 
 const SECTIONS = [
-  { id: 'headline-tablet', label: 'Pulse'     },
-  { id: 'world-tablet',    label: 'World'     },
-  { id: 'versions-tablet', label: 'Works'     },
-  { id: 'shipped-tablet',  label: 'Ships'     },
-  { id: 'leader-tablet',   label: 'Roll'      },
-  { id: 'cost-tablet',     label: 'Treasury'  },
-  { id: 'grade-tablet',    label: 'Mark'      },
-  { id: 'drift-tablet',    label: 'Drift'     },
-  { id: 'repo-tablet',     label: 'Mason'     },
-  { id: 'uptime-tablet',   label: 'Watch'     },
+  { id: 'headline-tablet', label: 'Pulse'      },
+  { id: 'uptime-tablet',   label: 'Watch'      },
+  { id: 'leader-tablet',   label: 'Architects' },
+  { id: 'versions-tablet', label: 'Works'      },
+  { id: 'cost-tablet',     label: 'Treasury'   },
+  { id: 'shipped-tablet',  label: 'Inscribed'  },
+  { id: 'world-tablet',    label: 'World'      },
 ];
 
 let navObserver = null;
@@ -977,244 +957,6 @@ function toDayKey(d) {
   return dt.toISOString().slice(0, 10);
 }
 
-// ---------- estimation drift ----------
-
-async function loadEstimationDrift() {
-  let data;
-  try {
-    data = await fetchJson('/api/gds/public/estimation-drift');
-  } catch (_) {
-    return;
-  }
-
-  if (data.overall_median == null) {
-    if (els.driftMedian) els.driftMedian.textContent = '—';
-    if (els.driftSample) els.driftSample.textContent = '0';
-    return;
-  }
-
-  if (els.driftMedian) els.driftMedian.textContent = data.overall_median.toFixed(2) + '×';
-  if (els.driftSample) els.driftSample.textContent = String(data.sample_size);
-
-  if (els.driftVersions) {
-    clear(els.driftVersions);
-    for (const v of (data.by_version || [])) {
-      const tag = document.createElement('span');
-      tag.className = 'cost-cat';
-      const strong = document.createElement('strong');
-      strong.textContent = v.version_id;
-      tag.appendChild(strong);
-      tag.append(` · ${v.median_ratio.toFixed(2)}× (${v.task_count} task${v.task_count === 1 ? '' : 's'})`);
-      els.driftVersions.appendChild(tag);
-    }
-  }
-}
-
-// ---------- quality grade (Stonemason's Mark, task 197) ----------
-
-async function loadGrades() {
-  if (!els.gradeAvg) return;
-  let data;
-  try {
-    data = await fetchJson('/api/gds/public/grades?days=7');
-  } catch (_) {
-    return;
-  }
-  const rolling = data.rolling || {};
-  const n = Number(rolling.n || 0);
-
-  if (els.gradeThreshold) {
-    els.gradeThreshold.textContent = data.threshold != null ? Number(data.threshold).toFixed(1) : '—';
-  }
-
-  if (n === 0) {
-    if (els.gradeAvg) els.gradeAvg.textContent = '—';
-    if (els.gradePassRate) els.gradePassRate.textContent = '—';
-    if (els.gradeN) els.gradeN.textContent = '0';
-  } else {
-    if (els.gradeAvg) els.gradeAvg.textContent = Number(rolling.avg_score).toFixed(1);
-    const pct = (Number(rolling.n_passed || 0) / n) * 100;
-    if (els.gradePassRate) els.gradePassRate.textContent = `${pct.toFixed(0)}%`;
-    if (els.gradeN) els.gradeN.textContent = String(n);
-  }
-
-  // 30-day trend line chart. Renders when Chart.js is loaded; bails silently otherwise.
-  if (els.gradeChart && typeof Chart !== 'undefined') {
-    const trend = Array.isArray(data.trend) ? data.trend : [];
-    const labels = trend.map((d) => d.day);
-    const points = trend.map((d) => Number(d.avg_score));
-    const threshold = Number(data.threshold || 5);
-    const thresholdLine = trend.map(() => threshold);
-    if (gradeChart) {
-      gradeChart.data.labels = labels;
-      gradeChart.data.datasets[0].data = points;
-      gradeChart.data.datasets[1].data = thresholdLine;
-      gradeChart.update();
-    } else {
-      gradeChart = new Chart(els.gradeChart.getContext('2d'), {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'daily avg mark',
-              data: points,
-              borderColor: '#5b7a4d',
-              backgroundColor: 'rgba(91,122,77,0.12)',
-              tension: 0.35,
-              pointRadius: 2,
-              fill: true,
-            },
-            {
-              label: 'passing mark',
-              data: thresholdLine,
-              borderColor: '#a98852',
-              borderDash: [4, 4],
-              pointRadius: 0,
-              fill: false,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              min: 0,
-              max: 10,
-              ticks: { stepSize: 2 },
-              title: { display: true, text: 'quality mark (0–10)', font: { family: '"Cinzel", Georgia, serif', size: 11, weight: '500' }, color: '#735f3d' },
-            },
-            x: {
-              ticks: { maxTicksLimit: 8 },
-              title: { display: true, text: 'date', font: { family: '"Cinzel", Georgia, serif', size: 11, weight: '500' }, color: '#735f3d' },
-            },
-          },
-          plugins: {
-            legend: { display: true, position: 'bottom' },
-            tooltip: { backgroundColor: 'rgba(42, 33, 16, 0.92)', padding: 10 },
-          },
-        },
-      });
-    }
-  }
-}
-
-// ---------- repo health (The Mason's Ledger, task 352) ----------
-
-async function loadRepoHealth() {
-  if (!els.repoLoc) return;
-  let data;
-  try {
-    data = await fetchJson('/api/gds/public/repo-health?days=30');
-  } catch (_) {
-    return;
-  }
-  const latest = data.latest || null;
-
-  if (!latest) {
-    if (els.repoLoc) els.repoLoc.textContent = '—';
-    if (els.repoDead) els.repoDead.textContent = '—';
-    if (els.repoBranches) els.repoBranches.textContent = '—';
-    if (els.repoConfirmed) els.repoConfirmed.textContent = '—';
-    return;
-  }
-
-  if (els.repoLoc) {
-    els.repoLoc.textContent =
-      latest.total_loc != null ? Number(latest.total_loc).toLocaleString() : '—';
-  }
-  if (els.repoDead) {
-    // dead_exports is null when knip is unavailable — show an em-dash, not 0.
-    els.repoDead.textContent = latest.dead_exports == null ? '—' : String(latest.dead_exports);
-  }
-  if (els.repoBranches) els.repoBranches.textContent = String(latest.stale_branches ?? 0);
-  if (els.repoConfirmed) els.repoConfirmed.textContent = String(latest.confirmed_unshipped ?? 0);
-
-  // Trend chart: three lines (LOC on its own axis; dead-exports + stale
-  // branches share a small right axis). Renders only when Chart.js is loaded.
-  if (els.repoChart && typeof Chart !== 'undefined') {
-    const trend = Array.isArray(data.trend) ? data.trend : [];
-    const labels = trend.map((d) => d.snapshot_date);
-    const loc = trend.map((d) => (d.total_loc == null ? null : Number(d.total_loc)));
-    const dead = trend.map((d) => (d.dead_exports == null ? null : Number(d.dead_exports)));
-    const branches = trend.map((d) => Number(d.stale_branches || 0));
-    const datasets = [
-      {
-        label: 'lines of stonework',
-        data: loc,
-        borderColor: '#5b7a4d',
-        backgroundColor: 'rgba(91,122,77,0.12)',
-        tension: 0.35,
-        pointRadius: 2,
-        fill: true,
-        yAxisID: 'yLoc',
-      },
-      {
-        label: 'abandoned exports',
-        data: dead,
-        borderColor: '#a98852',
-        tension: 0.35,
-        pointRadius: 2,
-        fill: false,
-        yAxisID: 'yCount',
-      },
-      {
-        label: 'unmerged works',
-        data: branches,
-        borderColor: '#8a5b5b',
-        borderDash: [4, 4],
-        tension: 0.35,
-        pointRadius: 2,
-        fill: false,
-        yAxisID: 'yCount',
-      },
-    ];
-    if (repoChart) {
-      repoChart.data.labels = labels;
-      repoChart.data.datasets[0].data = loc;
-      repoChart.data.datasets[1].data = dead;
-      repoChart.data.datasets[2].data = branches;
-      repoChart.update();
-    } else {
-      repoChart = new Chart(els.repoChart.getContext('2d'), {
-        type: 'line',
-        data: { labels, datasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          scales: {
-            yLoc: {
-              type: 'linear',
-              position: 'left',
-              beginAtZero: false,
-              ticks: { maxTicksLimit: 6 },
-              title: { display: true, text: 'lines of stonework', font: { family: '"Cinzel", Georgia, serif', size: 11, weight: '500' }, color: '#735f3d' },
-            },
-            yCount: {
-              type: 'linear',
-              position: 'right',
-              beginAtZero: true,
-              grid: { drawOnChartArea: false },
-              ticks: { stepSize: 1, maxTicksLimit: 6 },
-              title: { display: true, text: 'dead / unmerged (count)', font: { family: '"Cinzel", Georgia, serif', size: 11, weight: '500' }, color: '#735f3d' },
-            },
-            x: {
-              ticks: { maxTicksLimit: 8 },
-              title: { display: true, text: 'date', font: { family: '"Cinzel", Georgia, serif', size: 11, weight: '500' }, color: '#735f3d' },
-            },
-          },
-          plugins: {
-            legend: { display: true, position: 'bottom' },
-            tooltip: { backgroundColor: 'rgba(42, 33, 16, 0.92)', padding: 10 },
-          },
-        },
-      });
-    }
-  }
-}
-
 // ---------- shipped feed ----------
 
 const SHIPPED_PAGE_SIZE = 6;
@@ -1441,22 +1183,34 @@ async function loadLeaderboard() {
 
 // ---------- main ----------
 
+// Stamp the banner with the current local time. Called at the START of each
+// refresh cycle (before any awaits) so the displayed time matches when the
+// round trip was initiated, not when it completed. Stamping early also avoids
+// a race where two concurrent refresh() calls stamp in the wrong order (the
+// slower first call could overwrite a more-recent stamp from the faster second
+// call). null-guarded: els.lastUpdated is set once at module load and should
+// always be valid, but the guard makes future refactors safe.
+function stampRefreshTime() {
+  if (!els.lastUpdated) return;
+  const t = new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  els.lastUpdated.textContent = `tablet last consulted at ${t}`;
+}
+
 async function refresh() {
+  // Stamp the banner BEFORE the async work so it shows when this refresh
+  // started, not when it finished. Fixes the apparent "wrong time" when
+  // API calls are slow or when concurrent refresh() calls race.
+  stampRefreshTime();
   const tasks = [
     loadHeadline().catch((e) => console.error('headline', e)),
     loadWorldSnapshots().catch((e) => console.error('snapshots', e)),
     loadUptime().catch((e) => console.error('uptime', e)),
     loadVersions().catch((e) => console.error('versions', e)),
     loadCosts().catch((e) => console.error('costs', e)),
-    loadEstimationDrift().catch((e) => console.error('estimation-drift', e)),
-    loadGrades().catch((e) => console.error('grades', e)),
-    loadRepoHealth().catch((e) => console.error('repo-health', e)),
     loadShipped().catch((e) => console.error('shipped', e)),
     loadLeaderboard().catch((e) => console.error('leaderboard', e)),
   ];
   await Promise.all(tasks);
-  const t = new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  els.lastUpdated.textContent = `tablet last consulted at ${t}`;
 }
 
 // #409: render the sticky nav as soon as the DOM is parsed. It doesn't
@@ -1467,3 +1221,11 @@ renderNav();
 
 refresh();
 setInterval(refresh, 60_000);
+
+// Re-refresh immediately when the tab regains focus after being in the
+// background. Browsers throttle setInterval in hidden tabs, so the banner
+// timestamp and data can lag by many minutes. This brings the page up to date
+// the moment the viewer looks at it again.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refresh();
+});
