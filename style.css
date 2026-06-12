@@ -397,7 +397,9 @@ main {
   line-height: 1.5;
   color: var(--ink-soft);
   margin: 8px 0 4px;
-  max-width: 62ch;
+  /* Use the full tablet width — the dropdown gives the description the whole
+     row rather than a narrow column (task 981). */
+  max-width: none;
 }
 
 /* ---------- Treasury (cost summary) ---------- */
