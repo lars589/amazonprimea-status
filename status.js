@@ -481,137 +481,45 @@ async function loadUptime() {
   }
 }
 
-// ---------- versions ----------
-
-// Fetch done-when criteria for a single version. Returns [] on any failure
-// (the criteria block is decorative — never a reason to fail the whole
-// versions render).
-async function fetchDoneWhen(versionId) {
-  try {
-    const data = await fetchJson(`/api/gds/versions/${encodeURIComponent(versionId)}/done-when`);
-    return Array.isArray(data.criteria) ? data.criteria : [];
-  } catch (_) {
-    return [];
-  }
-}
-
-// Render the "X of Y criteria satisfied" expandable checklist under a
-// version row. Mounted as a child of `row` so it sits below the percentage
-// line. Returns the <details> node (caller doesn't need to do anything with
-// it; we just inject and walk away).
-function renderDoneWhenList(row, criteria, isInternal) {
-  if (!Array.isArray(criteria) || criteria.length === 0) return null;
-  const total = criteria.length;
-  const satisfied = criteria.filter((c) => c.satisfied).length;
-
-  const wrap = document.createElement('details');
-  wrap.className = 'done-when';
-  // Auto-expand when partially satisfied — a version that's mid-flight is
-  // the most interesting state to surface. Fully satisfied + fully empty
-  // collapse to keep the page compact.
-  if (satisfied > 0 && satisfied < total) wrap.open = true;
-
-  const summary = document.createElement('summary');
-  summary.className = 'done-when__summary';
-
-  const label = document.createElement('span');
-  label.textContent = `${satisfied} of ${total} criteria satisfied`;
-
-  const count = document.createElement('span');
-  count.className = 'done-when__count';
-  if (satisfied === total) count.classList.add('done-when__count--all');
-  else if (satisfied === 0) count.classList.add('done-when__count--none');
-  count.textContent = satisfied === total ? 'all wrought' : `${satisfied}/${total}`;
-
-  summary.appendChild(label);
-  summary.appendChild(count);
-  wrap.appendChild(summary);
-
-  const list = document.createElement('ul');
-  list.className = 'done-when__list';
-
-  for (const c of criteria) {
-    const li = document.createElement('li');
-    li.className = `done-when__item${c.satisfied ? ' done-when__item--satisfied' : ''}`;
-
-    const mark = document.createElement('span');
-    mark.className = 'done-when__mark';
-    mark.setAttribute('aria-hidden', 'true');
-    mark.textContent = c.satisfied ? '✓' : '○';
-
-    const text = document.createElement('span');
-    text.className = 'done-when__text';
-    text.textContent = c.criterion_md;
-
-    li.appendChild(mark);
-    li.appendChild(text);
-    list.appendChild(li);
-  }
-
-  wrap.appendChild(list);
-  row.appendChild(wrap);
-
-  // Mark unused-arg as intentional to keep eslint happy if it ever gets
-  // turned on for this file.
-  void isInternal;
-  return wrap;
-}
+// ---------- versions (active endeavours — a thin mirror of the work board) ----------
 
 async function loadVersions() {
   const data = await fetchJson('/api/gds/public/progress');
-  const rows = data.progress || [];
+  const all = data.progress || [];
+  // This public section is a deliberately thin MIRROR of the builders' work
+  // board (task 938). The work board is the canonical home of Works in Progress
+  // — it carries every version with its criteria, the progress bars, and the
+  // live in-flight list. Here we show only the ACTIVE endeavours, title + short
+  // description, nothing more.
+  //
+  // Active = underway, not past: exclude shipped/frozen, and exclude any version
+  // with no done_when_criteria seeded yet — a "future placeholder" the senate
+  // has not scoped (e.g. the next-version stub created at version close). Its
+  // criteria_count is 0, so it stays off the public board until it's real.
+  const rows = all.filter(
+    (v) => v.status !== 'shipped' && v.status !== 'frozen' && Number(v.criteria_count) > 0
+  );
   clear(els.versions);
   if (rows.length === 0) {
     const p = document.createElement('p');
     p.className = 'empty';
-    p.textContent = 'No endeavors yet declared.';
+    p.textContent = 'No endeavors underway just now.';
     els.versions.appendChild(p);
     return;
   }
 
-  // Fetch done-when for every version in parallel, then render in order.
-  // The lookup is tiny (single SELECT per version, hits the
-  // idx_done_when_version index) and the public endpoint is 60s-cached.
-  const doneWhenByVersion = new Map();
-  await Promise.all(
-    rows.map(async (v) => {
-      doneWhenByVersion.set(v.version_id, await fetchDoneWhen(v.version_id));
-    })
-  );
-
   for (const v of rows) {
-    const isInternal = v.track === 'internal';
     const row = document.createElement('div');
     row.className = 'version-row';
 
-    const top = document.createElement('div');
-    top.className = 'version-row__top';
-
-    const left = document.createElement('div');
-    left.style.display = 'flex';
-    left.style.alignItems = 'center';
-    left.style.gap = '8px';
-    const name = document.createElement('span');
+    const name = document.createElement('div');
     name.className = 'version-row__name';
     name.textContent = `${v.version_id} · ${v.name || ''}`;
-    const tag = document.createElement('span');
-    tag.className = `version-row__track version-row__track--${isInternal ? 'internal' : 'product'}`;
-    tag.textContent = isInternal ? 'internal' : 'product';
-    left.appendChild(name);
-    left.appendChild(tag);
+    row.appendChild(name);
 
-    const right = document.createElement('span');
-    right.className = 'version-row__count';
-    right.textContent = `${v.shipped_count} of ${v.total_count} wrought`;
-
-    top.appendChild(left);
-    top.appendChild(right);
-    row.appendChild(top);
-
-    // Paint-the-picture description (versions.done_when) — senate-voice copy
-    // explaining what this version IS, rendered above the progress bar. Only
-    // shown when the column is populated; shipped versions without copy stay
-    // silent rather than render an empty paragraph.
+    // Short description (versions.done_when) — senate-voice copy explaining what
+    // this endeavour IS. Shown only when populated; a version without copy stays
+    // a bare title rather than rendering an empty paragraph.
     const doneWhen = (v.done_when || '').trim();
     if (doneWhen) {
       const desc = document.createElement('p');
@@ -619,58 +527,6 @@ async function loadVersions() {
       desc.textContent = doneWhen;
       row.appendChild(desc);
     }
-
-    // Stacked three-segment bar — per the lifecycle (Phase 5):
-    //   shipped     = deployed live (deepest fill)
-    //   confirmed   = scanner+smoke passed, awaiting merge (mid fill)
-    //   completed   = builder declared done, awaiting verification (lightest)
-    //
-    // Segments are sized by raw task count (not priority weight) so the bar
-    // matches the "X of Y wrought" headline. The headline "% complete" line
-    // below the bar stays priority-weighted (existing semantics).
-    const total = Number(v.total_count) || 0;
-    const cShipped = Number(v.lifecycle_shipped_count) || 0;
-    const cConfirmed = Number(v.lifecycle_confirmed_count) || 0;
-    const cCompleted = Number(v.lifecycle_completed_count) || 0;
-    const pctOf = (n) => (total > 0 ? (n / total) * 100 : 0);
-
-    const bar = document.createElement('div');
-    bar.className = 'version-row__bar';
-
-    const segShipped = document.createElement('div');
-    segShipped.className = `version-row__seg version-row__seg--shipped${isInternal ? ' version-row__seg--internal' : ''}`;
-    segShipped.style.width = `${pctOf(cShipped)}%`;
-    segShipped.title = `${cShipped} shipped (deployed live)`;
-    bar.appendChild(segShipped);
-
-    const segConfirmed = document.createElement('div');
-    segConfirmed.className = `version-row__seg version-row__seg--confirmed${isInternal ? ' version-row__seg--internal' : ''}`;
-    segConfirmed.style.width = `${pctOf(cConfirmed)}%`;
-    segConfirmed.title = `${cConfirmed} confirmed (awaiting merge)`;
-    bar.appendChild(segConfirmed);
-
-    const segCompleted = document.createElement('div');
-    segCompleted.className = `version-row__seg version-row__seg--completed${isInternal ? ' version-row__seg--internal' : ''}`;
-    segCompleted.style.width = `${pctOf(cCompleted)}%`;
-    segCompleted.title = `${cCompleted} completed (awaiting verification)`;
-    bar.appendChild(segCompleted);
-
-    row.appendChild(bar);
-
-    const pct = Number(v.percent_complete) || 0;
-    const pctText = document.createElement('div');
-    pctText.className = 'version-row__pct';
-    pctText.textContent =
-      `${pct}% complete · weighted by priority` +
-      (cConfirmed + cCompleted > 0
-        ? `  ·  ${cShipped} shipped, ${cConfirmed} confirmed, ${cCompleted} completed`
-        : '');
-    row.appendChild(pctText);
-
-    // Done-when checklist (PMS-V2 #41). No-op for versions without seeded
-    // criteria; renders as a collapsible "X of Y criteria satisfied" line.
-    const criteria = doneWhenByVersion.get(v.version_id) || [];
-    renderDoneWhenList(row, criteria, isInternal);
 
     els.versions.appendChild(row);
   }
