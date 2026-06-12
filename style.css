@@ -342,13 +342,61 @@ main {
   color: var(--ink);
 }
 
+/* Stacked three-segment lifecycle bar — shipped / confirmed / completed,
+   sized by raw task count (matches the work board's bars). */
+.version-row__bar {
+  display: flex;
+  height: 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-soft);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(60, 40, 10, 0.18);
+}
+.version-row__seg { height: 100%; transition: width 600ms ease-out; }
+.version-row__seg--shipped   { background: linear-gradient(180deg, var(--accent), var(--accent-deep)); }
+.version-row__seg--confirmed { background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 65%, white), var(--accent)); }
+.version-row__seg--completed { background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 30%, white), color-mix(in oklab, var(--accent) 55%, white)); }
+.version-row__seg--internal.version-row__seg--shipped   { background: linear-gradient(180deg, var(--sea), #1d4d5a); }
+.version-row__seg--internal.version-row__seg--confirmed { background: linear-gradient(180deg, color-mix(in oklab, var(--sea) 65%, white), var(--sea)); }
+.version-row__seg--internal.version-row__seg--completed { background: linear-gradient(180deg, color-mix(in oklab, var(--sea) 30%, white), color-mix(in oklab, var(--sea) 55%, white)); }
+
+.version-row__pct {
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Description folded into a collapsed dropdown. */
+.version-row__about { margin: 2px 0 0; }
+.version-row__about-summary {
+  cursor: url('cursors/hand-pointer.png') 4 1, pointer;
+  list-style: none;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  user-select: none;
+}
+.version-row__about-summary::-webkit-details-marker { display: none; }
+.version-row__about-summary::before {
+  content: "▸";
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--rule);
+  transition: transform 180ms;
+  display: inline-block;
+  width: 0.9em;
+}
+.version-row__about[open] > .version-row__about-summary::before { transform: rotate(90deg); }
+
 .version-row__desc {
   font-family: var(--font-body);
   font-style: italic;
   font-size: 0.95rem;
   line-height: 1.5;
   color: var(--ink-soft);
-  margin: 2px 0 4px;
+  margin: 8px 0 4px;
   max-width: 62ch;
 }
 

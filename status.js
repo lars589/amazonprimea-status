@@ -509,6 +509,7 @@ async function loadVersions() {
   }
 
   for (const v of rows) {
+    const isInternal = v.track === 'internal';
     const row = document.createElement('div');
     row.className = 'version-row';
 
@@ -517,15 +518,51 @@ async function loadVersions() {
     name.textContent = `${v.version_id} · ${v.name || ''}`;
     row.appendChild(name);
 
-    // Short description (versions.done_when) — senate-voice copy explaining what
-    // this endeavour IS. Shown only when populated; a version without copy stays
-    // a bare title rather than rendering an empty paragraph.
+    // Stacked three-segment lifecycle bar (shipped / confirmed / completed),
+    // sized by raw task count so it matches the work board's bars.
+    const total = Number(v.total_count) || 0;
+    const counts = {
+      shipped: Number(v.lifecycle_shipped_count) || 0,
+      confirmed: Number(v.lifecycle_confirmed_count) || 0,
+      completed: Number(v.lifecycle_completed_count) || 0,
+    };
+    const pctOf = (n) => (total > 0 ? (n / total) * 100 : 0);
+    const bar = document.createElement('div');
+    bar.className = 'version-row__bar';
+    for (const [kind, label] of [
+      ['shipped', 'shipped (deployed live)'],
+      ['confirmed', 'confirmed (awaiting merge)'],
+      ['completed', 'completed (awaiting verification)'],
+    ]) {
+      const seg = document.createElement('div');
+      seg.className = `version-row__seg version-row__seg--${kind}${isInternal ? ' version-row__seg--internal' : ''}`;
+      seg.style.width = `${pctOf(counts[kind])}%`;
+      seg.title = `${counts[kind]} ${label}`;
+      bar.appendChild(seg);
+    }
+    row.appendChild(bar);
+
+    const pct = Number(v.percent_complete) || 0;
+    const pctText = document.createElement('div');
+    pctText.className = 'version-row__pct';
+    pctText.textContent = `${pct}% complete · weighted by priority`;
+    row.appendChild(pctText);
+
+    // Short description (versions.done_when), folded into a collapsed dropdown so
+    // the page stays a skimmable list of bars but the detail is one tap away.
     const doneWhen = (v.done_when || '').trim();
     if (doneWhen) {
+      const details = document.createElement('details');
+      details.className = 'version-row__about';
+      const summary = document.createElement('summary');
+      summary.className = 'version-row__about-summary';
+      summary.textContent = 'The work, in brief';
       const desc = document.createElement('p');
       desc.className = 'version-row__desc';
       desc.textContent = doneWhen;
-      row.appendChild(desc);
+      details.appendChild(summary);
+      details.appendChild(desc);
+      row.appendChild(details);
     }
 
     els.versions.appendChild(row);
