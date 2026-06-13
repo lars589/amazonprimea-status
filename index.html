@@ -209,6 +209,24 @@
     </ol>
   </section>
 
+  <section class="tablet" id="foundry-tablet" aria-labelledby="foundry-heading">
+    <div class="tablet__head">
+      <svg class="tablet__icon" aria-hidden="true"><use href="#orn-laurel"/></svg>
+      <div class="tablet__heading">
+        <h2 id="foundry-heading">The Foundry</h2>
+        <p class="tablet__subtitle">How the city's craft is changing — works shipped and time per work over the last ninety days. The whole, not the hands.</p>
+      </div>
+    </div>
+    <div class="cost-summary" id="foundry-stats">
+      <div class="stat"><div class="stat__num" id="foundry-shipped">—</div><div class="stat__label">works shipped (90d)</div></div>
+      <div class="stat"><div class="stat__num" id="foundry-builders">—</div><div class="stat__label">hands at the forge</div></div>
+      <div class="stat"><div class="stat__num" id="foundry-duration">—</div><div class="stat__label">avg time / work</div></div>
+    </div>
+    <div class="foundry__charts" id="foundry-charts"></div>
+    <div class="foundry__kinds" id="foundry-kinds"></div>
+    <p class="chart-note" id="foundry-empty" hidden>Not enough shipped works yet to draw the curve.</p>
+  </section>
+
   <section class="tablet" id="versions-tablet" aria-labelledby="versions-heading">
     <div class="tablet__head">
       <svg class="tablet__icon" aria-hidden="true"><use href="#orn-column"/></svg>

@@ -1250,3 +1250,38 @@ main {
 @media (max-width: 640px) {
   .uptime-bars { height: 44px; }
 }
+
+/* ---- The Foundry — ecosystem dev curve (#291, C5) ---------------------- */
+.foundry__charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.8rem;
+  margin: 0.8rem 0;
+}
+.foundry__chart {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 0.6rem 0.7rem 0.5rem;
+}
+.foundry__chart-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-bottom: 0.4rem;
+}
+.foundry-spark { display: block; width: 100%; height: 54px; }
+.foundry-spark__area { opacity: 0.16; }
+.foundry-spark__line { stroke-width: 1.8; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.foundry__kinds { margin-top: 0.4rem; }
+.foundry__kind {
+  display: grid;
+  grid-template-columns: 8rem 1fr 2rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+.foundry__kind-label { font-size: 0.82rem; color: var(--ink); text-transform: capitalize; }
+.foundry__kind-bar { background: var(--bg-frame); border-radius: 3px; height: 0.7rem; overflow: hidden; }
+.foundry__kind-fill { display: block; height: 100%; background: var(--accent); }
+.foundry__kind-n { font-size: 0.8rem; color: var(--ink-soft); text-align: right; }

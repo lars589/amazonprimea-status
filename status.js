@@ -84,6 +84,7 @@ const SECTIONS = [
   { id: 'headline-tablet', label: 'Pulse'      },
   { id: 'uptime-tablet',   label: 'Watch'      },
   { id: 'leader-tablet',   label: 'Architects' },
+  { id: 'foundry-tablet',  label: 'Foundry'    },
   { id: 'versions-tablet', label: 'Works'      },
   { id: 'cost-tablet',     label: 'Treasury'   },
   { id: 'shipped-tablet',  label: 'Inscribed'  },
@@ -1089,6 +1090,77 @@ function stampRefreshTime() {
   els.lastUpdated.textContent = `tablet last consulted at ${t}`;
 }
 
+// ---------- the Foundry — ecosystem dev curve (#291, C5) ----------
+//
+// Public, individuals-stripped aggregate of the builder "AI dev curve":
+// works shipped per day and average time per work over 90 days, plus the
+// kinds-of-work fingerprint. Fed by /api/gds/public/analytics/ecosystem.
+// Inline SVG sparklines — no chart library for this tile.
+
+function foundrySparkline(values, color) {
+  const W = 320, H = 54, pad = 4;
+  const nums = (values || []).map((v) => (Number.isFinite(Number(v)) ? Number(v) : 0));
+  if (nums.length === 0) return '';
+  const min = Math.min(...nums), max = Math.max(...nums), span = max - min || 1;
+  const n = nums.length;
+  const x = (i) => (n === 1 ? W / 2 : pad + (i * (W - 2 * pad)) / (n - 1));
+  const y = (v) => H - pad - ((v - min) / span) * (H - 2 * pad);
+  const line = nums.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const area = `${pad},${H - pad} ${line} ${(W - pad)},${H - pad}`;
+  return `<svg class="foundry-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="trend">
+    <polyline class="foundry-spark__area" points="${area}" fill="${color}" />
+    <polyline class="foundry-spark__line" points="${line}" fill="none" stroke="${color}" />
+  </svg>`;
+}
+
+async function loadEcosystem() {
+  const data = await fetchJson('/api/gds/public/analytics/ecosystem?days=90').catch(() => null);
+  const shippedEl = document.getElementById('foundry-shipped');
+  const buildersEl = document.getElementById('foundry-builders');
+  const durationEl = document.getElementById('foundry-duration');
+  const chartsEl = document.getElementById('foundry-charts');
+  const kindsEl = document.getElementById('foundry-kinds');
+  const emptyEl = document.getElementById('foundry-empty');
+  if (!chartsEl) return;
+
+  const h = data?.headline || {};
+  const total = h.total_shipped || 0;
+  if (!data || total === 0) {
+    if (emptyEl) emptyEl.hidden = false;
+    if (shippedEl) shippedEl.textContent = '—';
+    if (buildersEl) buildersEl.textContent = '—';
+    if (durationEl) durationEl.textContent = '—';
+    chartsEl.innerHTML = '';
+    if (kindsEl) kindsEl.innerHTML = '';
+    return;
+  }
+  if (emptyEl) emptyEl.hidden = true;
+  if (shippedEl) shippedEl.textContent = total.toLocaleString();
+  if (buildersEl) buildersEl.textContent = (h.active_builders ?? 0).toLocaleString();
+  if (durationEl) durationEl.textContent = h.avg_duration_min ? `${Math.round(h.avg_duration_min)}m` : '—';
+
+  const shipVals = (data.ship_rate || []).map((r) => Number(r.n));
+  const durVals = (data.duration_trend || []).map((r) => Number(r.avg_actual));
+  chartsEl.innerHTML =
+    `<div class="foundry__chart"><div class="foundry__chart-title">Works shipped / day</div>${foundrySparkline(shipVals, '#2f5a3f') || '<p class="empty">no data</p>'}</div>` +
+    `<div class="foundry__chart"><div class="foundry__chart-title">Avg time per work (min)</div>${foundrySparkline(durVals, '#2d6e7e') || '<p class="empty">no data</p>'}</div>`;
+
+  const kinds = (data.top_kinds || []).slice(0, 6);
+  if (kindsEl) {
+    if (kinds.length) {
+      const maxN = Math.max(...kinds.map((k) => Number(k.n)));
+      kindsEl.innerHTML = kinds.map((k) => {
+        const w = maxN ? Math.round((Number(k.n) / maxN) * 100) : 0;
+        return `<div class="foundry__kind"><span class="foundry__kind-label">${k.kind}</span>` +
+          `<span class="foundry__kind-bar"><span class="foundry__kind-fill" style="width:${w}%"></span></span>` +
+          `<span class="foundry__kind-n">${k.n}</span></div>`;
+      }).join('');
+    } else {
+      kindsEl.innerHTML = '';
+    }
+  }
+}
+
 async function refresh() {
   // Stamp the banner BEFORE the async work so it shows when this refresh
   // started, not when it finished. Fixes the apparent "wrong time" when
@@ -1102,6 +1174,7 @@ async function refresh() {
     loadCosts().catch((e) => console.error('costs', e)),
     loadShipped().catch((e) => console.error('shipped', e)),
     loadLeaderboard().catch((e) => console.error('leaderboard', e)),
+    loadEcosystem().catch((e) => console.error('ecosystem', e)),
   ];
   await Promise.all(tasks);
 }
