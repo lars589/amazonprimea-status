@@ -227,8 +227,6 @@ async function loadHeadline() {
 
 // ---------- world snapshot ----------
 
-let _activeSnapshotId = null;
-
 function fmtSnapshotWhen(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -240,7 +238,6 @@ function fmtSnapshotWhen(iso) {
 
 function showSnapshot(snap) {
   if (!els.worldSnapshot || !snap) return;
-  _activeSnapshotId = snap.id;
 
   clear(els.worldSnapshot);
   const img = document.createElement('img');
