@@ -1195,3 +1195,99 @@ setInterval(refresh, 60_000);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') refresh();
 });
+
+// ---------- deep-link resolver (#654) ----------
+// A bare doc ref like "#173" links into the Builders' Hall, but a viewer can also
+// land on the PUBLIC status dashboard at status.amazonprimea.com/#/idea/173 (or
+// /#/task/N, /#/blocker/N). Resolve it to a MINIMAL card — id + status + type
+// only; an idea/blocker title is NEVER shown here (the public endpoints withhold
+// it), and a task title only when the projection already marked it public
+// (shipped/confirmed). The card links into the hall, where a signed-in builder
+// sees the full record.
+const DEEPLINK_RE = /^#\/(task|idea|blocker)\/(\d+)$/;
+const HALL_ORIGIN = 'https://amazonprimea.com/builders';
+
+function dismissStatusDeepCard() {
+  const c = document.getElementById('status-deeplink');
+  if (c) c.remove();
+}
+
+function clearStatusDeepLink() {
+  dismissStatusDeepCard();
+  // Drop the hash so back/refresh doesn't immediately re-open the card.
+  if (DEEPLINK_RE.test(location.hash)) {
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+}
+
+function renderStatusDeepCard(kind, id, state) {
+  dismissStatusDeepCard();
+  const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const overlay = document.createElement('div');
+  overlay.id = 'status-deeplink';
+  overlay.className = 'deeplink';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', `${kind} #${id}`);
+  const panel = mk('div', 'deeplink__panel');
+
+  const close = mk('button', 'deeplink__close', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close');
+  close.addEventListener('click', clearStatusDeepLink);
+  panel.appendChild(close);
+
+  const label = `#${id}`;
+  panel.appendChild(mk('p', 'deeplink__kind', kind.toUpperCase()));
+  if (state.loading) {
+    panel.appendChild(mk('p', 'deeplink__title', `Consulting the archive for ${label}…`));
+  } else if (state.notFound) {
+    panel.appendChild(mk('p', 'deeplink__title', `${label} — no such ${kind}`));
+    panel.appendChild(mk('p', 'deeplink__note', 'Records number tasks, ideas, and blockers separately from GitHub pull requests — this may be a PR, not a record here.'));
+  } else if (state.error) {
+    panel.appendChild(mk('p', 'deeplink__title', `Could not resolve ${label}`));
+    panel.appendChild(mk('p', 'deeplink__note', 'The archive could not be reached. Try again in a moment.'));
+  } else {
+    const r = state.ref || {};
+    panel.appendChild(mk('p', 'deeplink__title', r.title ? `${label} — ${r.title}` : label));
+    const meta = [];
+    if (r.status) meta.push(r.status);
+    if (r.kind) meta.push(r.kind);
+    if (r.version_id) meta.push(r.version_id);
+    if (r.priority != null) meta.push(`P${r.priority}`);
+    if (meta.length) panel.appendChild(mk('p', 'deeplink__meta', meta.join(' · ')));
+  }
+  const a = mk('a', 'deeplink__link', 'Open in the Builders’ Hall →');
+  a.href = `${HALL_ORIGIN}#/${kind}/${id}`;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  panel.appendChild(a);
+
+  overlay.appendChild(panel);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) clearStatusDeepLink(); });
+  document.body.appendChild(overlay);
+}
+
+async function resolveStatusDeepLink() {
+  const m = DEEPLINK_RE.exec(location.hash);
+  if (!m) { dismissStatusDeepCard(); return; }
+  const kind = m[1];
+  const id = Number(m[2]);
+  renderStatusDeepCard(kind, id, { loading: true });
+  try {
+    const path = kind === 'task' ? `/api/gds/public/tasks/${id}`
+      : kind === 'idea' ? `/api/gds/public/ideas/${id}`
+        : `/api/gds/public/blockers/${id}`;
+    const res = await fetch(`${API}${path}`, { cache: 'no-store' });
+    if (res.status === 404) { renderStatusDeepCard(kind, id, { notFound: true }); return; }
+    if (!res.ok) { renderStatusDeepCard(kind, id, { error: true }); return; }
+    const data = await res.json();
+    const ref = data.task || data.idea || data.blocker || null;
+    renderStatusDeepCard(kind, id, ref ? { ref } : { notFound: true });
+  } catch (_) {
+    renderStatusDeepCard(kind, id, { error: true });
+  }
+}
+
+window.addEventListener('hashchange', resolveStatusDeepLink);
+resolveStatusDeepLink();

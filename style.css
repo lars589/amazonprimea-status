@@ -1285,3 +1285,30 @@ main {
 .foundry__kind-bar { background: var(--bg-frame); border-radius: 3px; height: 0.7rem; overflow: hidden; }
 .foundry__kind-fill { display: block; height: 100%; background: var(--accent); }
 .foundry__kind-n { font-size: 0.8rem; color: var(--ink-soft); text-align: right; }
+
+/* Deep-link card (#654): the minimal task/idea/blocker resolver overlay. */
+.deeplink {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(42, 33, 16, 0.55); backdrop-filter: blur(2px); padding: 1.5rem;
+}
+.deeplink__panel {
+  position: relative; max-width: 30rem; width: 100%;
+  background: var(--bg-card); border: 2px solid var(--rule); border-radius: 5px;
+  padding: 1.4rem 1.6rem; box-shadow: 0 10px 40px rgba(42, 33, 16, 0.35);
+}
+.deeplink__close {
+  position: absolute; top: 0.4rem; right: 0.6rem;
+  background: none; border: none; cursor: pointer;
+  font-size: 1.5rem; line-height: 1; color: var(--ink-soft);
+}
+.deeplink__close:hover { color: var(--ink); }
+.deeplink__kind {
+  font-family: var(--font-display); font-size: 0.7rem; letter-spacing: 0.18em;
+  color: var(--rule); margin: 0 0 0.3rem;
+}
+.deeplink__title { font-family: var(--font-display); font-size: 1.15rem; color: var(--ink); margin: 0 0 0.4rem; }
+.deeplink__meta { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 0.6rem; }
+.deeplink__note { font-size: 0.85rem; color: var(--ink-faint); font-style: italic; margin: 0 0 0.6rem; }
+.deeplink__link { display: inline-block; color: var(--sea); font-weight: 600; text-decoration: none; }
+.deeplink__link:hover { text-decoration: underline; }
