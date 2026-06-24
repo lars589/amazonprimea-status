@@ -506,6 +506,20 @@ async function loadVersions() {
     return;
   }
 
+  // Goal layer (ADR 0086 §2 / BV1.R58): fetch each active version's goals so the
+  // card can show how its work is organised (Version → Goals). Best-effort + in
+  // parallel; the per-version feed is cached 60s server-side, and a failure just
+  // omits the goals line (the bars below are the canonical progress).
+  const goalsByVersion = {};
+  await Promise.all(rows.map(async (v) => {
+    try {
+      const dw = await fetchJson(`/api/gds/versions/${encodeURIComponent(v.version_id)}/done-when`);
+      goalsByVersion[v.version_id] = Array.isArray(dw.goals) ? dw.goals : [];
+    } catch (_) {
+      goalsByVersion[v.version_id] = [];
+    }
+  }));
+
   for (const v of rows) {
     const isInternal = v.track === 'internal';
     const row = document.createElement('div');
@@ -545,6 +559,18 @@ async function loadVersions() {
     pctText.className = 'version-row__pct';
     pctText.textContent = `${pct}% complete · weighted by priority`;
     row.appendChild(pctText);
+
+    // Goal layer (ADR 0086 §2): how this version's work is organised. Shown when
+    // the version has goals (every version has at least its default goal after the
+    // R56 backfill); becomes informative as real goals are created + achieved.
+    const goals = goalsByVersion[v.version_id] || [];
+    if (goals.length) {
+      const achieved = goals.filter((g) => g.status === 'achieved').length;
+      const goalLine = document.createElement('div');
+      goalLine.className = 'version-row__pct';
+      goalLine.textContent = `${goals.length} goal${goals.length === 1 ? '' : 's'} · ${achieved} achieved`;
+      row.appendChild(goalLine);
+    }
 
     // Short description (versions.done_when), folded into a collapsed dropdown so
     // the page stays a skimmable list of bars but the detail is one tap away.
