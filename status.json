@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-06-28T20:46:18.885Z",
+  "generated_at": "2026-06-28T21:47:02.673Z",
   "target": "https://amazonprimea.com/healthz",
   "current": {
-    "t": "2026-06-28T20:46:18.885Z",
+    "t": "2026-06-28T21:47:02.673Z",
     "status": "up",
     "http_status": 200,
-    "latency_ms": 220,
+    "latency_ms": 251,
     "tries": 1
   },
   "summary": {
     "uptime_24h": 100,
     "uptime_7d": 100,
     "uptime_90d": 100,
-    "checks_total": 216
+    "checks_total": 217
   }
 }
